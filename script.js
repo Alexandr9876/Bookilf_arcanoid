@@ -3,19 +3,25 @@ const ctx = canvas.getContext("2d");
 document.body.appendChild(canvas);
 
 // --- Настройка Canvas ---
-const MAX_WIDTH = 480;
-const ASPECT_RATIO = 3 / 4;
+const canvas = document.createElement("canvas");
+const ctx = canvas.getContext("2d");
+document.body.appendChild(canvas);
 
-let screenWidth = window.innerWidth;
-let screenHeight = window.innerHeight;
+// --- Настройка Canvas на весь экран ---
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-canvas.width = screenWidth;
-canvas.height = screenHeight;
-
-canvas.style.display = "block";
-canvas.style.margin = "50px auto"; // центрируем с отступом сверху
-canvas.style.background = "#222";
-canvas.style.touchAction = "none";
+canvas.style.display = "block";       // блок для центрирования
+canvas.style.position = "absolute";   // фиксируем позицию
+canvas.style.left = "0";              // по левому краю
+canvas.style.top = "0";               // сверху
+canvas.style.right = "0";             // по правому краю
+canvas.style.bottom = "0";            // снизу
+canvas.style.margin = "0 auto";       // центр по горизонтали
+canvas.style.background = "#222";     // фон игрового поля
+canvas.style.touchAction = "none";    // отключаем скролл свайпом
+canvas.style.userSelect = "none";     // запрет выделения текста
+canvas.style.overflow = "hidden";     // нет полос прокрутки
 
 let rightPressed = false;
 let leftPressed = false;
@@ -225,4 +231,5 @@ function draw() {
 }
 
 draw();
+
 
