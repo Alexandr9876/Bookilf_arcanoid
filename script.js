@@ -2,24 +2,22 @@ const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 document.body.appendChild(canvas);
 
-// --- Настройка правильного соотношения сторон ---
+// --- Настройка Canvas ---
 let screenWidth = window.innerWidth;
-if (screenWidth > 480) screenWidth = 480; // ограничиваем максимальную ширину
+if (screenWidth > 480) screenWidth = 480;
 canvas.width = screenWidth;
-canvas.height = canvas.width * 2 / 3; // соотношение 3:2
+canvas.height = canvas.width * 2 / 3;
 
-// центрируем Canvas
 canvas.style.display = "block";
 canvas.style.margin = "0 auto";
 canvas.style.background = "#222";
-canvas.style.touchAction = "none"; // отключаем стандартное скроллирование
+canvas.style.touchAction = "none";
 
-// --- Управление ---
 let rightPressed = false;
 let leftPressed = false;
 let touchX = null;
 
-// Клавиатура (ПК)
+// --- Управление клавиатурой ---
 document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowRight") rightPressed = true;
   if (e.key === "ArrowLeft") leftPressed = true;
@@ -29,7 +27,7 @@ document.addEventListener("keyup", (e) => {
   if (e.key === "ArrowLeft") leftPressed = false;
 });
 
-// Свайп/движение пальцем
+// --- Управление пальцем ---
 canvas.addEventListener("touchstart", (e) => {
   touchX = e.touches[0].clientX;
 });
@@ -68,14 +66,17 @@ const brickOffsetLeft = 30;
 
 let score = 0;
 
-// Создаём кирпичи 🍑
+// Создаём кирпичи
 const bricks = [];
-for (let c = 0; c < brickColumnCount; c++) {
-  bricks[c] = [];
-  for (let r = 0; r < brickRowCount; r++) {
-    bricks[c][r] = { x: 0, y: 0, status: 1 };
+function createBricks() {
+  for (let c = 0; c < brickColumnCount; c++) {
+    bricks[c] = [];
+    for (let r = 0; r < brickRowCount; r++) {
+      bricks[c][r] = { x: 0, y: 0, status: 1 };
+    }
   }
 }
+createBricks();
 
 // --- Отрисовка ---
 function drawBall() {
@@ -122,8 +123,7 @@ function collisionDetection() {
           b.status = 0;
           score++;
           if (score === brickRowCount * brickColumnCount) {
-            alert("🎉 Победа! 🍆🍌🍑");
-            document.location.reload();
+            showMenu("🎉 Победа! 🍆🍌🍑");
           }
         }
       }
@@ -137,8 +137,89 @@ function drawScore() {
   ctx.fillText("Счёт: " + score, 10, 25);
 }
 
+// --- Меню после проигрыша/победы ---
+function showMenu(message) {
+  cancelAnimationFrame(animationId);
+  ctx.fillStyle = "rgba(0,0,0,0.7)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#fff";
+  ctx.font = "24px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(message, canvas.width / 2, canvas.height / 2 - 40);
+
+  // Кнопки "Заново" и "Выйти"
+  const buttonWidth = 120;
+  const buttonHeight = 40;
+  const startX = canvas.width / 2 - buttonWidth - 10;
+  const exitX = canvas.width / 2 + 10;
+  const buttonY = canvas.height / 2;
+
+  // Отрисовка кнопок
+  ctx.fillStyle = "#4CAF50";
+  ctx.fillRect(startX, buttonY, buttonWidth, buttonHeight);
+  ctx.fillStyle = "#f44336";
+  ctx.fillRect(exitX, buttonY, buttonWidth, buttonHeight);
+
+  ctx.fillStyle = "#fff";
+  ctx.font = "18px Arial";
+  ctx.fillText("Заново", startX + buttonWidth / 2, buttonY + 25);
+  ctx.fillText("Выйти", exitX + buttonWidth / 2, buttonY + 25);
+
+  // Обработка клика/тача
+  function clickHandler(e) {
+    let clientX, clientY;
+    if (e.type.startsWith("touch")) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    if (
+      clientX >= startX &&
+      clientX <= startX + buttonWidth &&
+      clientY >= buttonY &&
+      clientY <= buttonY + buttonHeight
+    ) {
+      restartGame();
+      removeListeners();
+    } else if (
+      clientX >= exitX &&
+      clientX <= exitX + buttonWidth &&
+      clientY >= buttonY &&
+      clientY <= buttonY + buttonHeight
+    ) {
+      canvas.remove();
+      removeListeners();
+    }
+  }
+
+  function removeListeners() {
+    canvas.removeEventListener("click", clickHandler);
+    canvas.removeEventListener("touchstart", clickHandler);
+  }
+
+  canvas.addEventListener("click", clickHandler);
+  canvas.addEventListener("touchstart", clickHandler);
+}
+
+// --- Перезапуск игры ---
+function restartGame() {
+  x = canvas.width / 2;
+  y = canvas.height - 60;
+  dx = 3;
+  dy = -3;
+  paddleX = (canvas.width - paddleWidth) / 2;
+  score = 0;
+  createBricks();
+  draw();
+}
+
 // --- Основной цикл ---
+let animationId;
 function draw() {
+  animationId = requestAnimationFrame(draw);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBricks();
   drawBall();
@@ -151,19 +232,15 @@ function draw() {
   else if (y + dy > canvas.height - 40) {
     if (x > paddleX && x < paddleX + paddleWidth) dy = -dy;
     else {
-      alert("💀 Игра кончила_сь!");
-      document.location.reload();
+      showMenu("💀 Игра кончила_сь!");
     }
   }
 
   x += dx;
   y += dy;
 
-  // клавиатурное управление (ПК)
   if (rightPressed && paddleX < canvas.width - paddleWidth) paddleX += 6;
   else if (leftPressed && paddleX > 0) paddleX -= 6;
-
-  requestAnimationFrame(draw);
 }
 
 draw();
