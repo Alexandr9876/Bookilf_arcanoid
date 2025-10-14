@@ -1,7 +1,3 @@
-const canvas = document.createElement("canvas");
-const ctx = canvas.getContext("2d");
-document.body.appendChild(canvas);
-
 // --- Настройка Canvas ---
 const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
@@ -231,5 +227,6 @@ function draw() {
 }
 
 draw();
+
 
 
