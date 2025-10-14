@@ -101,7 +101,7 @@ function drawScore() {
     ctx.font = "20px Arial";
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
-    ctx.fillText("Счёт: " + score, 10, 25);
+    ctx.fillText("Обананеных персиков: " + score, 10, 25);
 }
 
 // --- Проверка столкновений ---
@@ -115,7 +115,7 @@ function collisionDetection() {
                 dy = -dy;
                 b.status = 0;
                 score++;
-                if (score === brickRowCount * brickColumnCount) showMenu("🎉 Победа! 🍆🍌🍑");
+                if (score === brickRowCount * brickColumnCount) showMenu("🎉 Гигант! 🍆🍌🍑");
             }
         }
     }
@@ -147,8 +147,8 @@ function showMenu(message) {
 
     ctx.fillStyle = "#fff";
     ctx.font = "18px Arial";
-    ctx.fillText("Заново", startX + buttonWidth / 2, buttonY + 25);
-    ctx.fillText("Выйти", exitX + buttonWidth / 2, buttonY + 25);
+    ctx.fillText("Еееще...", startX + buttonWidth / 2, buttonY + 25);
+    ctx.fillText("Я спать", exitX + buttonWidth / 2, buttonY + 25);
 
     function clickHandler(e) {
         let clientX, clientY;
@@ -216,7 +216,7 @@ function draw() {
     if (y + dy < ballRadius) dy = -dy;
     else if (y + dy > canvas.height - 40) {
         if (x > paddleX && x < paddleX + paddleWidth) dy = -dy;
-        else showMenu("💀 Игра окончена!");
+        else showMenu("💀 Игра кончила_ся!");
     }
 
     x += dx;
@@ -225,3 +225,4 @@ function draw() {
 
 // --- Запуск игры ---
 draw();
+
