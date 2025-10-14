@@ -4,7 +4,7 @@ document.body.appendChild(canvas);
 
 // --- Настройка Canvas ---
 const MAX_WIDTH = 480;
-const ASPECT_RATIO = 3 / 4; // ширина / высота = 3:4
+const ASPECT_RATIO = 3 / 4;
 
 let screenWidth = Math.min(window.innerWidth, MAX_WIDTH);
 let screenHeight = screenWidth / ASPECT_RATIO;
@@ -13,11 +13,10 @@ canvas.width = screenWidth;
 canvas.height = screenHeight;
 
 canvas.style.display = "block";
-canvas.style.margin = "0 auto";
+canvas.style.margin = "50px auto"; // центрируем с отступом сверху
 canvas.style.background = "#222";
-canvas.style.touchAction = "none"; // отключаем стандартное поведение свайпов
+canvas.style.touchAction = "none";
 
-// --- Управление ---
 let rightPressed = false;
 let leftPressed = false;
 
@@ -31,14 +30,12 @@ document.addEventListener("keyup", (e) => {
   if (e.key === "ArrowLeft") leftPressed = false;
 });
 
-// перемещение пальцем по Canvas
+// --- Управление свайпом ---
 const paddleWidth = canvas.width * 0.25;
 const paddleHeight = 10;
 let paddleX = (canvas.width - paddleWidth) / 2;
 
-canvas.addEventListener("touchstart", (e) => {
-  e.preventDefault();
-});
+canvas.addEventListener("touchstart", (e) => e.preventDefault());
 canvas.addEventListener("touchmove", (e) => {
   e.preventDefault();
   const touch = e.touches[0];
@@ -65,9 +62,8 @@ const brickOffsetTop = 50;
 const brickOffsetLeft = 30;
 
 let score = 0;
-
-// кирпичи 🍑
 const bricks = [];
+
 function createBricks() {
   for (let c = 0; c < brickColumnCount; c++) {
     bricks[c] = [];
@@ -80,14 +76,14 @@ createBricks();
 
 // --- Отрисовка ---
 function drawBall() {
-  ctx.font = "28px 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif";
+  ctx.font = "28px 'Segoe UI Emoji','Noto Color Emoji','Apple Color Emoji',sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("🍌", x, y);
 }
 
 function drawPaddle() {
-  ctx.font = "36px 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif";
+  ctx.font = "36px 'Segoe UI Emoji','Noto Color Emoji','Apple Color Emoji',sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("🍆", paddleX + paddleWidth / 2, canvas.height - 30);
 }
@@ -95,12 +91,13 @@ function drawPaddle() {
 function drawBricks() {
   for (let c = 0; c < brickColumnCount; c++) {
     for (let r = 0; r < brickRowCount; r++) {
-      if (bricks[c][r].status === 1) {
+      const b = bricks[c][r];
+      if (b.status === 1) {
         const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
         const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
-        bricks[c][r].x = brickX;
-        bricks[c][r].y = brickY;
-        ctx.font = "28px 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif";
+        b.x = brickX;
+        b.y = brickY;
+        ctx.font = "28px 'Segoe UI Emoji','Noto Color Emoji','Apple Color Emoji',sans-serif";
         ctx.textAlign = "center";
         ctx.fillText("🍑", brickX + brickWidth / 2, brickY + brickHeight / 2);
       }
@@ -112,20 +109,11 @@ function collisionDetection() {
   for (let c = 0; c < brickColumnCount; c++) {
     for (let r = 0; r < brickRowCount; r++) {
       const b = bricks[c][r];
-      if (b.status === 1) {
-        if (
-          x > b.x &&
-          x < b.x + brickWidth &&
-          y > b.y &&
-          y < b.y + brickHeight
-        ) {
-          dy = -dy;
-          b.status = 0;
-          score++;
-          if (score === brickRowCount * brickColumnCount) {
-            showMenu("🎉 Победа! 🍆🍌🍑");
-          }
-        }
+      if (b.status === 1 && x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight) {
+        dy = -dy;
+        b.status = 0;
+        score++;
+        if (score === brickRowCount * brickColumnCount) showMenu("🎉 Победа! 🍆🍌🍑");
       }
     }
   }
@@ -134,10 +122,11 @@ function collisionDetection() {
 function drawScore() {
   ctx.font = "20px Arial";
   ctx.fillStyle = "#fff";
-  ctx.fillText("Счёт: " + score, 10, 25);
+  ctx.textAlign = "left";
+  ctx.fillText("Счёт: " + score, 10, 30); // теперь над полем
 }
 
-// --- Меню после поражения/победы ---
+// --- Меню ---
 let animationId;
 function showMenu(message) {
   cancelAnimationFrame(animationId);
@@ -147,7 +136,7 @@ function showMenu(message) {
   ctx.fillStyle = "#fff";
   ctx.font = "24px Arial";
   ctx.textAlign = "center";
-  ctx.fillText(message, canvas.width / 2, canvas.height / 2 - 40);
+  ctx.fillText(message, canvas.width / 2, canvas.height / 2 - 50);
 
   const buttonWidth = 120;
   const buttonHeight = 40;
@@ -175,20 +164,16 @@ function showMenu(message) {
       clientY = e.clientY;
     }
 
-    if (
-      clientX >= startX &&
-      clientX <= startX + buttonWidth &&
-      clientY >= buttonY &&
-      clientY <= buttonY + buttonHeight
-    ) {
+    const rect = canvas.getBoundingClientRect();
+    clientX -= rect.left;
+    clientY -= rect.top;
+
+    if (clientX >= startX && clientX <= startX + buttonWidth &&
+        clientY >= buttonY && clientY <= buttonY + buttonHeight) {
       restartGame();
       removeListeners();
-    } else if (
-      clientX >= exitX &&
-      clientX <= exitX + buttonWidth &&
-      clientY >= buttonY &&
-      clientY <= buttonY + buttonHeight
-    ) {
+    } else if (clientX >= exitX && clientX <= exitX + buttonWidth &&
+               clientY >= buttonY && clientY <= buttonY + buttonHeight) {
       canvas.remove();
       removeListeners();
     }
@@ -203,7 +188,7 @@ function showMenu(message) {
   canvas.addEventListener("touchstart", clickHandler);
 }
 
-// --- Перезапуск игры ---
+// --- Перезапуск ---
 function restartGame() {
   x = canvas.width / 2;
   y = canvas.height - 60;
@@ -229,9 +214,7 @@ function draw() {
   if (y + dy < ballRadius) dy = -dy;
   else if (y + dy > canvas.height - 40) {
     if (x > paddleX && x < paddleX + paddleWidth) dy = -dy;
-    else {
-      showMenu("💀 Игра окончена!");
-    }
+    else showMenu("💀 Игра окончена!");
   }
 
   x += dx;
