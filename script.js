@@ -2,14 +2,24 @@ const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 document.body.appendChild(canvas);
 
-// Настройка под размер экрана
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+// --- Настройка правильного соотношения сторон ---
+let screenWidth = window.innerWidth;
+if (screenWidth > 480) screenWidth = 480; // ограничиваем максимальную ширину
+canvas.width = screenWidth;
+canvas.height = canvas.width * 2 / 3; // соотношение 3:2
 
+// центрируем Canvas
+canvas.style.display = "block";
+canvas.style.margin = "0 auto";
+canvas.style.background = "#222";
+canvas.style.touchAction = "none"; // отключаем стандартное скроллирование
+
+// --- Управление ---
 let rightPressed = false;
 let leftPressed = false;
+let touchX = null;
 
-// --- Управление с клавиатуры (для ПК) ---
+// Клавиатура (ПК)
 document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowRight") rightPressed = true;
   if (e.key === "ArrowLeft") leftPressed = true;
@@ -19,29 +29,25 @@ document.addEventListener("keyup", (e) => {
   if (e.key === "ArrowLeft") leftPressed = false;
 });
 
-// --- Управление пальцем (свайп) ---
-let touchX = null;
-
+// Свайп/движение пальцем
 canvas.addEventListener("touchstart", (e) => {
   touchX = e.touches[0].clientX;
 });
-
 canvas.addEventListener("touchmove", (e) => {
   const moveX = e.touches[0].clientX;
   if (touchX !== null) {
     const deltaX = moveX - touchX;
-    paddleX += deltaX; // двигаем платформу в сторону свайпа
+    paddleX += deltaX;
     if (paddleX < 0) paddleX = 0;
     if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
     touchX = moveX;
   }
 });
-
 canvas.addEventListener("touchend", () => {
   touchX = null;
 });
 
-// Настройки объектов
+// --- Настройки объектов ---
 const ballRadius = 10;
 let x = canvas.width / 2;
 let y = canvas.height - 60;
@@ -71,6 +77,7 @@ for (let c = 0; c < brickColumnCount; c++) {
   }
 }
 
+// --- Отрисовка ---
 function drawBall() {
   ctx.font = "28px 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif";
   ctx.textAlign = "center";
@@ -130,6 +137,7 @@ function drawScore() {
   ctx.fillText("Счёт: " + score, 10, 25);
 }
 
+// --- Основной цикл ---
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBricks();
@@ -143,7 +151,7 @@ function draw() {
   else if (y + dy > canvas.height - 40) {
     if (x > paddleX && x < paddleX + paddleWidth) dy = -dy;
     else {
-      alert("💀 Игра окончена!");
+      alert("💀 Игра кончила_сь!");
       document.location.reload();
     }
   }
@@ -151,6 +159,7 @@ function draw() {
   x += dx;
   y += dy;
 
+  // клавиатурное управление (ПК)
   if (rightPressed && paddleX < canvas.width - paddleWidth) paddleX += 6;
   else if (leftPressed && paddleX > 0) paddleX -= 6;
 
