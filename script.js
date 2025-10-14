@@ -1,111 +1,150 @@
-﻿const canvas = document.getElementById("game");
+const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
+document.body.appendChild(canvas);
 
-let paddle = { x: 160, y: 570, w: 80, h: 20 };
-let ball = { x: 200, y: 300, dx: 2, dy: -2, r: 10 };
-let bricks = [];
+canvas.width = 480;
+canvas.height = 320;
+
+let rightPressed = false;
+let leftPressed = false;
+
+document.addEventListener("keydown", keyDownHandler);
+document.addEventListener("keyup", keyUpHandler);
+
+function keyDownHandler(e) {
+  if (e.key === "Right" || e.key === "ArrowRight") {
+    rightPressed = true;
+  } else if (e.key === "Left" || e.key === "ArrowLeft") {
+    leftPressed = true;
+  }
+}
+
+function keyUpHandler(e) {
+  if (e.key === "Right" || e.key === "ArrowRight") {
+    rightPressed = false;
+  } else if (e.key === "Left" || e.key === "ArrowLeft") {
+    leftPressed = false;
+  }
+}
+
+// Настройки
+const ballRadius = 10;
+let x = canvas.width / 2;
+let y = canvas.height - 30;
+let dx = 2;
+let dy = -2;
+const paddleHeight = 10;
+const paddleWidth = 75;
+let paddleX = (canvas.width - paddleWidth) / 2;
+
+const brickRowCount = 3;
+const brickColumnCount = 5;
+const brickWidth = 75;
+const brickHeight = 20;
+const brickPadding = 10;
+const brickOffsetTop = 30;
+const brickOffsetLeft = 30;
+
 let score = 0;
-let level = 1;
 
-const rows = 4;
-const cols = 6;
-const brickW = 60;
-const brickH = 20;
+// Создаем кирпичи
+const bricks = [];
+for (let c = 0; c < brickColumnCount; c++) {
+  bricks[c] = [];
+  for (let r = 0; r < brickRowCount; r++) {
+    bricks[c][r] = { x: 0, y: 0, status: 1 };
+  }
+}
 
-// Функция создания уровня
-function createBricks() {
-  bricks = [];
-  for (let r = 0; r < rows + level - 1; r++) { // с каждым уровнем больше рядов
-    for (let c = 0; c < cols; c++) {
-      bricks.push({ x: 20 + c * 65, y: 40 + r * 30, hit: false });
+function drawBall() {
+  ctx.font = "24px 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("🍌", x, y);
+}
+
+function drawPaddle() {
+  ctx.font = "28px 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("🍆", paddleX + paddleWidth / 2, canvas.height - 15);
+}
+
+function drawBricks() {
+  for (let c = 0; c < brickColumnCount; c++) {
+    for (let r = 0; r < brickRowCount; r++) {
+      if (bricks[c][r].status === 1) {
+        const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
+        const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
+        bricks[c][r].x = brickX;
+        bricks[c][r].y = brickY;
+
+        ctx.font = "24px 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🍑", brickX + brickWidth / 2, brickY + brickHeight / 2);
+      }
     }
   }
 }
 
-// Начинаем с первого уровня
-createBricks();
-
-// Движение платформы мышью
-document.addEventListener("mousemove", e => {
-  let rect = canvas.getBoundingClientRect();
-  paddle.x = e.clientX - rect.left - paddle.w / 2;
-});
-
-// Рисуем платформу (баклажан)
-function drawPaddle() {
-  ctx.font = "24px Arial";
-  ctx.fillText("??", paddle.x + 25, paddle.y + 18);
-}
-
-// Рисуем шарик (банан)
-function drawBall() {
-  ctx.font = "24px Arial";
-  ctx.fillText("??", ball.x - 8, ball.y + 8);
-}
-
-// Рисуем блоки (персики)
-function drawBricks() {
-  ctx.font = "24px Arial";
-  for (let b of bricks) {
-    if (!b.hit) ctx.fillText("??", b.x, b.y + 18);
+function collisionDetection() {
+  for (let c = 0; c < brickColumnCount; c++) {
+    for (let r = 0; r < brickRowCount; r++) {
+      const b = bricks[c][r];
+      if (b.status === 1) {
+        if (
+          x > b.x &&
+          x < b.x + brickWidth &&
+          y > b.y &&
+          y < b.y + brickHeight
+        ) {
+          dy = -dy;
+          b.status = 0;
+          score++;
+          if (score === brickRowCount * brickColumnCount) {
+            alert("🎉 Ты победил! 🍆🍌🍑");
+            document.location.reload();
+          }
+        }
+      }
+    }
   }
 }
 
-// Рисуем счёт
 function drawScore() {
-  ctx.font = "20px Arial";
+  ctx.font = "16px Arial";
   ctx.fillStyle = "#fff";
-  ctx.fillText("Счёт: " + score + "  Уровень: " + level, 10, 20);
+  ctx.fillText("Счёт: " + score, 8, 20);
 }
 
-// Основная функция игры
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBricks();
-  drawPaddle();
   drawBall();
+  drawPaddle();
   drawScore();
+  collisionDetection();
 
-  // Движение мяча
-  ball.x += ball.dx;
-  ball.y += ball.dy;
-
-  // Столкновение со стенами
-  if (ball.x < 10 || ball.x > 390) ball.dx *= -1;
-  if (ball.y < 10) ball.dy *= -1;
-
-  // Отскок от платформы
-  if (
-    ball.y > paddle.y - 10 &&
-    ball.x > paddle.x &&
-    ball.x < paddle.x + paddle.w
-  ) {
-    ball.dy *= -1;
+  if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
+    dx = -dx;
   }
-
-  // Попадание в кирпич
-  for (let b of bricks) {
-    if (!b.hit && ball.x > b.x && ball.x < b.x + brickW && ball.y > b.y && ball.y < b.y + brickH) {
-      b.hit = true;
-      ball.dy *= -1;
-      score += 10;
+  if (y + dy < ballRadius) {
+    dy = -dy;
+  } else if (y + dy > canvas.height - ballRadius) {
+    if (x > paddleX && x < paddleX + paddleWidth) {
+      dy = -dy;
+    } else {
+      alert("💀 Игра окончена!");
+      document.location.reload();
     }
   }
 
-  // Проверка на завершение уровня
-  if (bricks.every(b => b.hit)) {
-    level++;
-    ball.x = 200;
-    ball.y = 300;
-    ball.dx = 2 + level * 0.5; // мяч ускоряется с уровнем
-    ball.dy = -2 - level * 0.5;
-    createBricks();
-  }
+  x += dx;
+  y += dy;
 
-  // Гейм овер
-  if (ball.y > 600) {
-    alert("Игра окончена! Счёт: " + score);
-    document.location.reload();
+  if (rightPressed && paddleX < canvas.width - paddleWidth) {
+    paddleX += 5;
+  } else if (leftPressed && paddleX > 0) {
+    paddleX -= 5;
   }
 
   requestAnimationFrame(draw);
