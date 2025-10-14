@@ -3,21 +3,25 @@ const ctx = canvas.getContext("2d");
 document.body.appendChild(canvas);
 
 // --- Настройка Canvas ---
-let screenWidth = window.innerWidth;
-if (screenWidth > 480) screenWidth = 480;
+const MAX_WIDTH = 480;
+const ASPECT_RATIO = 3 / 4; // ширина / высота = 3:4
+
+let screenWidth = Math.min(window.innerWidth, MAX_WIDTH);
+let screenHeight = screenWidth / ASPECT_RATIO;
+
 canvas.width = screenWidth;
-canvas.height = canvas.width * 2 / 3;
+canvas.height = screenHeight;
 
 canvas.style.display = "block";
 canvas.style.margin = "0 auto";
 canvas.style.background = "#222";
-canvas.style.touchAction = "none";
+canvas.style.touchAction = "none"; // отключаем стандартное поведение свайпов
 
+// --- Управление ---
 let rightPressed = false;
 let leftPressed = false;
-let touchX = null;
 
-// --- Управление клавиатурой ---
+// клавиатура (ПК)
 document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowRight") rightPressed = true;
   if (e.key === "ArrowLeft") leftPressed = true;
@@ -27,22 +31,22 @@ document.addEventListener("keyup", (e) => {
   if (e.key === "ArrowLeft") leftPressed = false;
 });
 
-// --- Управление пальцем ---
+// перемещение пальцем по Canvas
+const paddleWidth = canvas.width * 0.25;
+const paddleHeight = 10;
+let paddleX = (canvas.width - paddleWidth) / 2;
+
 canvas.addEventListener("touchstart", (e) => {
-  touchX = e.touches[0].clientX;
+  e.preventDefault();
 });
 canvas.addEventListener("touchmove", (e) => {
-  const moveX = e.touches[0].clientX;
-  if (touchX !== null) {
-    const deltaX = moveX - touchX;
-    paddleX += deltaX;
-    if (paddleX < 0) paddleX = 0;
-    if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
-    touchX = moveX;
-  }
-});
-canvas.addEventListener("touchend", () => {
-  touchX = null;
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  let relativeX = touch.clientX - rect.left;
+  paddleX = relativeX - paddleWidth / 2;
+  if (paddleX < 0) paddleX = 0;
+  if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
 });
 
 // --- Настройки объектов ---
@@ -51,10 +55,6 @@ let x = canvas.width / 2;
 let y = canvas.height - 60;
 let dx = 3;
 let dy = -3;
-
-const paddleWidth = canvas.width * 0.25;
-const paddleHeight = 10;
-let paddleX = (canvas.width - paddleWidth) / 2;
 
 const brickRowCount = 4;
 const brickColumnCount = 6;
@@ -66,7 +66,7 @@ const brickOffsetLeft = 30;
 
 let score = 0;
 
-// Создаём кирпичи
+// кирпичи 🍑
 const bricks = [];
 function createBricks() {
   for (let c = 0; c < brickColumnCount; c++) {
@@ -137,24 +137,24 @@ function drawScore() {
   ctx.fillText("Счёт: " + score, 10, 25);
 }
 
-// --- Меню после проигрыша/победы ---
+// --- Меню после поражения/победы ---
+let animationId;
 function showMenu(message) {
   cancelAnimationFrame(animationId);
   ctx.fillStyle = "rgba(0,0,0,0.7)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
   ctx.fillStyle = "#fff";
   ctx.font = "24px Arial";
   ctx.textAlign = "center";
   ctx.fillText(message, canvas.width / 2, canvas.height / 2 - 40);
 
-  // Кнопки "Заново" и "Выйти"
   const buttonWidth = 120;
   const buttonHeight = 40;
   const startX = canvas.width / 2 - buttonWidth - 10;
   const exitX = canvas.width / 2 + 10;
   const buttonY = canvas.height / 2;
 
-  // Отрисовка кнопок
   ctx.fillStyle = "#4CAF50";
   ctx.fillRect(startX, buttonY, buttonWidth, buttonHeight);
   ctx.fillStyle = "#f44336";
@@ -165,7 +165,6 @@ function showMenu(message) {
   ctx.fillText("Заново", startX + buttonWidth / 2, buttonY + 25);
   ctx.fillText("Выйти", exitX + buttonWidth / 2, buttonY + 25);
 
-  // Обработка клика/тача
   function clickHandler(e) {
     let clientX, clientY;
     if (e.type.startsWith("touch")) {
@@ -217,7 +216,6 @@ function restartGame() {
 }
 
 // --- Основной цикл ---
-let animationId;
 function draw() {
   animationId = requestAnimationFrame(draw);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -232,7 +230,7 @@ function draw() {
   else if (y + dy > canvas.height - 40) {
     if (x > paddleX && x < paddleX + paddleWidth) dy = -dy;
     else {
-      showMenu("💀 Игра кончила_сь!");
+      showMenu("💀 Игра окончена!");
     }
   }
 
