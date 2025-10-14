@@ -6,8 +6,8 @@ document.body.appendChild(canvas);
 const MAX_WIDTH = 480;
 const ASPECT_RATIO = 3 / 4;
 
-let screenWidth = Math.min(window.innerWidth, MAX_WIDTH);
-let screenHeight = screenWidth / ASPECT_RATIO;
+let screenWidth = window.innerWidth;
+let screenHeight = window.innerHeight;
 
 canvas.width = screenWidth;
 canvas.height = screenHeight;
@@ -225,3 +225,4 @@ function draw() {
 }
 
 draw();
+
