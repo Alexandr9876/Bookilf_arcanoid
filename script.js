@@ -3,40 +3,59 @@ const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 document.body.appendChild(canvas);
 
-// --- Настройка Canvas на весь экран ---
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+// --- Фиксированное игровое поле (вертикальное) ---
+const FIELD_WIDTH = 300;
+const FIELD_HEIGHT = 500;
 
-canvas.style.display = "block";       // блок для центрирования
-canvas.style.position = "absolute";   // фиксируем позицию
-canvas.style.left = "0";              // по левому краю
-canvas.style.top = "0";               // сверху
-canvas.style.right = "0";             // по правому краю
-canvas.style.bottom = "0";            // снизу
-canvas.style.margin = "0 auto";       // центр по горизонтали
-canvas.style.background = "#222";     // фон игрового поля
-canvas.style.touchAction = "none";    // отключаем скролл свайпом
-canvas.style.userSelect = "none";     // запрет выделения текста
-canvas.style.overflow = "hidden";     // нет полос прокрутки
+canvas.width = FIELD_WIDTH;
+canvas.height = FIELD_HEIGHT;
 
-let rightPressed = false;
-let leftPressed = false;
+canvas.style.position = "absolute";
+canvas.style.left = "50%";
+canvas.style.top = "50%";
+canvas.style.transform = "translate(-50%, -50%)";
+canvas.style.background = "#222";
+canvas.style.touchAction = "none";
+canvas.style.userSelect = "none";
+canvas.style.overflow = "hidden";
 
-// клавиатура (ПК)
-document.addEventListener("keydown", (e) => {
-  if (e.key === "ArrowRight") rightPressed = true;
-  if (e.key === "ArrowLeft") leftPressed = true;
-});
-document.addEventListener("keyup", (e) => {
-  if (e.key === "ArrowRight") rightPressed = false;
-  if (e.key === "ArrowLeft") leftPressed = false;
-});
-
-// --- Управление свайпом ---
+// --- Платформа ---
 const paddleWidth = canvas.width * 0.25;
 const paddleHeight = 10;
 let paddleX = (canvas.width - paddleWidth) / 2;
 
+// --- Счет ---
+let score = 0;
+
+// --- Шарик ---
+const ballRadius = 10;
+let x = canvas.width / 2;
+let y = canvas.height - 60;
+let dx = 3;
+let dy = -3;
+
+// --- Кирпичи ---
+const brickRowCount = 4;
+const brickColumnCount = 6;
+const brickWidth = (canvas.width - 40) / brickColumnCount;
+const brickHeight = 25;
+const brickPadding = 5;
+const brickOffsetTop = 40;
+const brickOffsetLeft = 20;
+let bricks = [];
+
+function createBricks() {
+  bricks = [];
+  for (let c = 0; c < brickColumnCount; c++) {
+    bricks[c] = [];
+    for (let r = 0; r < brickRowCount; r++) {
+      bricks[c][r] = { x: 0, y: 0, status: 1 };
+    }
+  }
+}
+createBricks();
+
+// --- Управление свайпом ---
 canvas.addEventListener("touchstart", (e) => e.preventDefault());
 canvas.addEventListener("touchmove", (e) => {
   e.preventDefault();
@@ -47,34 +66,6 @@ canvas.addEventListener("touchmove", (e) => {
   if (paddleX < 0) paddleX = 0;
   if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
 });
-
-// --- Настройки объектов ---
-const ballRadius = 10;
-let x = canvas.width / 2;
-let y = canvas.height - 60;
-let dx = 3;
-let dy = -3;
-
-const brickRowCount = 4;
-const brickColumnCount = 6;
-const brickWidth = (canvas.width - 80) / brickColumnCount;
-const brickHeight = 25;
-const brickPadding = 10;
-const brickOffsetTop = 50;
-const brickOffsetLeft = 30;
-
-let score = 0;
-const bricks = [];
-
-function createBricks() {
-  for (let c = 0; c < brickColumnCount; c++) {
-    bricks[c] = [];
-    for (let r = 0; r < brickRowCount; r++) {
-      bricks[c][r] = { x: 0, y: 0, status: 1 };
-    }
-  }
-}
-createBricks();
 
 // --- Отрисовка ---
 function drawBall() {
@@ -107,6 +98,14 @@ function drawBricks() {
   }
 }
 
+function drawScore() {
+  ctx.font = "20px Arial";
+  ctx.fillStyle = "#fff";
+  ctx.textAlign = "left";
+  ctx.fillText("Счёт: " + score, 10, 25);
+}
+
+// --- Проверка столкновений ---
 function collisionDetection() {
   for (let c = 0; c < brickColumnCount; c++) {
     for (let r = 0; r < brickRowCount; r++) {
@@ -121,17 +120,11 @@ function collisionDetection() {
   }
 }
 
-function drawScore() {
-  ctx.font = "20px Arial";
-  ctx.fillStyle = "#fff";
-  ctx.textAlign = "left";
-  ctx.fillText("Счёт: " + score, 10, 30); // теперь над полем
-}
-
 // --- Меню ---
 let animationId;
 function showMenu(message) {
   cancelAnimationFrame(animationId);
+
   ctx.fillStyle = "rgba(0,0,0,0.7)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -176,7 +169,7 @@ function showMenu(message) {
       removeListeners();
     } else if (clientX >= exitX && clientX <= exitX + buttonWidth &&
                clientY >= buttonY && clientY <= buttonY + buttonHeight) {
-      canvas.remove();
+      hideCanvas();
       removeListeners();
     }
   }
@@ -188,6 +181,11 @@ function showMenu(message) {
 
   canvas.addEventListener("click", clickHandler);
   canvas.addEventListener("touchstart", clickHandler);
+}
+
+// --- Скрыть Canvas при выходе ---
+function hideCanvas() {
+  canvas.style.display = "none";
 }
 
 // --- Перезапуск ---
@@ -206,6 +204,7 @@ function restartGame() {
 function draw() {
   animationId = requestAnimationFrame(draw);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   drawBricks();
   drawBall();
   drawPaddle();
@@ -221,12 +220,7 @@ function draw() {
 
   x += dx;
   y += dy;
-
-  if (rightPressed && paddleX < canvas.width - paddleWidth) paddleX += 6;
-  else if (leftPressed && paddleX > 0) paddleX -= 6;
 }
 
+// --- Запуск игры ---
 draw();
-
-
-
