@@ -3,6 +3,33 @@ const ctx = canvas.getContext("2d");
 
 let paddle = { x: 160, y: 570, w: 80, h: 20 };
 let ball = { x: 200, y: 300, dx: 2, dy: -2, r: 10 };
+
+// --- УПРАВЛЕНИЕ ПАЛКОЙ (мышь + палец) ---
+canvas.style.touchAction = "none"; // отключает прокрутку на мобильных
+
+function handlePointerMove(clientX) {
+  const rect = canvas.getBoundingClientRect();
+  const relX = clientX - rect.left;
+  paddle.x = relX - paddle.w / 2;
+
+  // ограничиваем движение в пределах экрана
+  if (paddle.x < 0) paddle.x = 0;
+  if (paddle.x + paddle.w > canvas.width) paddle.x = canvas.width - paddle.w;
+}
+
+// управление мышью
+canvas.addEventListener("mousemove", (e) => {
+  handlePointerMove(e.clientX);
+});
+
+// управление пальцем (на мобильных)
+canvas.addEventListener("touchmove", (e) => {
+  e.preventDefault(); // предотвращает скролл страницы
+  if (e.touches && e.touches[0]) {
+    handlePointerMove(e.touches[0].clientX);
+  }
+}, { passive: false });
+
 let bricks = [];
 let score = 0;
 let level = 1;
@@ -165,11 +192,29 @@ function drawLevel1() {
     gameState = "endOfLevel1";
   }
 
-  // движение мышью
-  document.addEventListener("mousemove", e => {
-    let rect = canvas.getBoundingClientRect();
-    paddle.x = e.clientX - rect.left - paddle.w / 2;
-  });
+  // --- Управление (мышь + палец) ---
+canvas.style.touchAction = "none"; // отключает прокрутку страницы при касании
+
+function handlePointerMove(clientX) {
+  const rect = canvas.getBoundingClientRect();
+  paddle.x = clientX - rect.left - paddle.w / 2;
+  if (paddle.x < 0) paddle.x = 0;
+  if (paddle.x + paddle.w > canvas.width) paddle.x = canvas.width - paddle.w;
+}
+
+// управление мышью
+canvas.addEventListener("mousemove", (e) => {
+  handlePointerMove(e.clientX);
+});
+
+// управление пальцем (на телефоне)
+canvas.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+  if (e.touches && e.touches[0]) {
+    handlePointerMove(e.touches[0].clientX);
+  }
+}, { passive: false });
+
 }
 
 function drawEndLevel1() {
@@ -282,3 +327,4 @@ function loop() {
 }
 
 loop();
+
