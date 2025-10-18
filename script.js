@@ -206,7 +206,7 @@ function drawMenu() {
     ctx.fillStyle = "#fff";
     ctx.fillText(title, canvas.width / 2, rectY + rectHeight / 2);
 
-    ctx.font = "24px 'Segoe UI Emoji', Arial";
+    ctx.font = "24px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
     for(let i=0;i<canvas.width;i+=40){
         ctx.fillText("🛏️", i+20, rectY-25);
         ctx.fillText("🛏️", i+20, rectY+rectHeight+20);
@@ -401,6 +401,7 @@ function draw(){
 }
 
 draw();
+
 
 
 
