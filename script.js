@@ -132,9 +132,11 @@ function collisionDetection() {
 function drawButton(text, x, y, w, h, color) {
     ctx.fillStyle = color;
     ctx.fillRect(x, y, w, h);
+
     ctx.font = "20px Arial";
     ctx.fillStyle = "#fff";
     ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic"; // <-- добавлено
     ctx.fillText(text, x + w / 2, y + 26);
 }
 
@@ -299,4 +301,5 @@ function draw() {
 
 // --- Запуск игры ---
 draw();
+
 
