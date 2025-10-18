@@ -265,6 +265,11 @@ function draw() {
     animationId = requestAnimationFrame(draw);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    if (gameState === "menu") {
+        drawMenu();
+        return;
+    }
+
     drawBricks();
     drawBall();
     drawPaddle();
@@ -285,5 +290,6 @@ function draw() {
 
 // --- Запуск игры ---
 draw();
+
 
 
