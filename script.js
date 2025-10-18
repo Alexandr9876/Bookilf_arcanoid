@@ -95,13 +95,19 @@ function startStoryLevel1() {
     storyHitRegistered = false;
     storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
     storyDodgeCount = 0;
+
     kissX = canvas.width / 2;
     kissY = canvas.height - 60;
-    kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6;
+
+    // ✅ добавляем скорость поцелуя (3 раза быстрее обычного шара)
+    const kSpeed = 9;
+    const kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6;
     kdx = kSpeed * Math.cos(kAngle);
     kdy = -kSpeed * Math.sin(kAngle);
+
     gameState = "story1";
 }
+
 
 // --- Рисование ---
 function drawBall() {
@@ -376,5 +382,6 @@ function draw(){
 }
 
 draw();
+
 
 
