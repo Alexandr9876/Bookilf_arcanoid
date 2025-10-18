@@ -86,7 +86,7 @@ function startStoryLevel1() {
 }
 
 function hideCanvas() {
-    canvas.style.display="none";
+    canvas.style.display = "none";
 }
 
 // --- Рисование ---
@@ -161,16 +161,39 @@ function drawButton(text, x, y, w, h, color) {
 
 function drawMenu() {
     ctx.fillStyle = "#111";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.font = "28px Arial";
-    ctx.textAlign="center";
-    ctx.fillStyle = "#FF69B4";
-    ctx.fillRect(20,50,canvas.width-40,40);
-    ctx.fillStyle="#fff";
-    ctx.fillText("🍑 АРКАНОИД СТРАСТИ 🍌", canvas.width/2, 70);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    drawButton("Играть", canvas.width/2 - 70, 200, 140, 40, "#4CAF50");
-    drawButton("Сюжет", canvas.width/2 - 70, 260, 140, 40, "#f44336");
+    const title = "🍑 АРКАНОИД СТРАСТИ 🍌";
+
+    let fontSize = canvas.width < 350 ? 20 : 28;
+
+    ctx.font = fontSize + "px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    const paddingX = 10;
+    const paddingY = 5;
+    const textWidth = ctx.measureText(title).width;
+    const rectWidth = textWidth + paddingX * 2;
+    const rectHeight = fontSize + paddingY * 2;
+    const rectX = canvas.width / 2 - rectWidth / 2;
+    const rectY = 50;
+
+    ctx.fillStyle = "#FF69B4";
+    ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
+
+    ctx.fillStyle = "#fff";
+    ctx.fillText(title, canvas.width / 2, rectY + rectHeight / 2);
+
+    // Кнопки
+    const btnY1 = rectY + rectHeight + 20; 
+    const btnY2 = btnY1 + 60;             
+    drawButton("Играть", canvas.width/2-70, btnY1, 140, 40, "#4CAF50");
+    drawButton("Сюжет", canvas.width/2-70, btnY2, 140, 40, "#f44336");
+    
+    // Сохраняем координаты кнопок для handlePointer
+    canvas.menuButtonY1 = btnY1;
+    canvas.menuButtonY2 = btnY2;
 }
 
 // --- Поп-ап ---
@@ -219,9 +242,11 @@ function handlePointer(e){
     const clickY = clientY - rect.top;
 
     if(gameState==="menu"){
+        const btnY1 = canvas.menuButtonY1;
+        const btnY2 = canvas.menuButtonY2;
         if(clickX>=canvas.width/2-70 && clickX<=canvas.width/2+70){
-            if(clickY>=200 && clickY<=240) startGame();
-            if(clickY>=260 && clickY<=300) startStoryLevel1();
+            if(clickY>=btnY1 && clickY<=btnY1+40) startGame();
+            if(clickY>=btnY2 && clickY<=btnY2+40) startStoryLevel1();
         }
     }
     else if(gameState==="popup"){
