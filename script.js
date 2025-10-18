@@ -130,12 +130,15 @@ function drawPaddle() {
 }
 
 function drawBricks() {
+    const totalWidth = brickColumnCount * (brickWidth + brickPadding) - brickPadding;
+    const offsetX = (canvas.width - totalWidth) / 2; // центрируем
+
     for (let c = 0; c < brickColumnCount; c++) {
         for (let r = 0; r < brickRowCount; r++) {
             const b = bricks[c][r];
             if (b.status === 1) {
-                const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
-                const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
+                const brickX = offsetX + c * (brickWidth + brickPadding);
+                const brickY = brickOffsetTop + r * (brickHeight + brickPadding);
                 b.x = brickX;
                 b.y = brickY;
                 ctx.font = "28px 'Segoe UI Emoji', Arial";
@@ -145,6 +148,7 @@ function drawBricks() {
         }
     }
 }
+
 
 function drawScore() {
     ctx.font = "18px Arial";
@@ -401,6 +405,7 @@ function draw(){
 }
 
 draw();
+
 
 
 
