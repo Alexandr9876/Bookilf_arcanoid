@@ -273,7 +273,7 @@ function drawStoryLevel1() {
 
     // --- Грустный/смущённый смайлик ---
     ctx.font = "56px 'Segoe UI Emoji', Arial"; // крупнее в 2 раза
-    ctx.fillText(dodgeCount < 3 ? "😢" : "😳", storyTargetX, storyTargetY);
+    ctx.fillText(dodgeCount < 3 ? "👧" : "💖", storyTargetX, storyTargetY);
 
     // --- Движение поцелуя ---
     if (kissX + kdx > canvas.width - 10 || kissX + kdx < 10) kdx = -kdx;
@@ -401,6 +401,7 @@ function draw(){
 }
 
 draw();
+
 
 
 
