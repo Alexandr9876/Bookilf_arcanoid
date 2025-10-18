@@ -15,6 +15,64 @@ canvas.style.transform = "translate(-50%, -50%)";
 canvas.style.background = "#222";
 canvas.style.touchAction = "none";
 
+// --- Кирпичи ---
+const brickRowCount = 4;
+const brickColumnCount = 6;
+const brickPadding = 5;
+const brickOffsetTop = 40;
+const brickOffsetLeft = 20;
+let brickWidth;
+let brickHeight;
+let bricks = [];
+
+// --- Платформа ---
+let paddleWidth;
+const paddleHeight = 10;
+let paddleX;
+
+// --- Сюжетная платформа ---
+const storyPaddleWidth = 50;
+const storyPaddleHeight = 20;
+let storyPaddleX;
+let storyTargetX;
+let storyTargetY = 100;
+let storyHitCount = 0;
+let storyHitRegistered = false;
+
+// --- Летающие смайлики в меню ---
+let maleX = 50, maleY = canvas.height - 50, maleDx = 2;
+let femaleX = 250, femaleY = canvas.height - 50, femaleDx = -2;
+
+// --- Вертикально летающие символы пола ---
+let maleSymbolY = canvas.height - 100;
+let femaleSymbolY = canvas.height - 150;
+let maleSymbolDy = 1.2;
+let femaleSymbolDy = 1.5;
+
+// --- Шарик ---
+const ballRadius = 10;
+let ballX = canvas.width / 2;
+let ballY = canvas.height - 60;
+let dx = 3;
+let dy = -3;
+
+// --- Сюжетный "поцелуй" ---
+let kissX = canvas.width / 2;
+let kissY = canvas.height - 60;
+let kdx = 9;
+let kdy = -9;
+let dodgeCount = 0;
+let targetDodging = false;
+
+// --- Счет и состояние ---
+let score = 0;
+let gameState = "menu"; // menu, playing, story1, popup
+
+// --- Поп-ап ---
+let popupMessage = "";
+let popupButtons = [];
+
+// --- Функция ресайза ---
 function resizeCanvas() {
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
@@ -32,11 +90,10 @@ function resizeCanvas() {
     canvas.style.top = "50%";
     canvas.style.transform = "translate(-50%, -50%)";
 
+    // --- пересчет размеров объектов ---
     brickWidth = (canvas.width - 40) / brickColumnCount;
     brickHeight = 25;
 
-
-    // Обновляем размеры игровых объектов
     paddleWidth = canvas.width * 0.25;
     paddleX = (canvas.width - paddleWidth) / 2;
 
@@ -52,6 +109,7 @@ resizeCanvas();
 
 // --- вызов при изменении размера окна ---
 window.addEventListener("resize", resizeCanvas);
+
 
 // --- Летающие смайлики в меню ---
 let maleX = 50, maleY = canvas.height - 50, maleDx = 2;
@@ -111,10 +169,10 @@ function createBricks() {
 
 // --- Сюжетный уровень ---
 let storyHitCount = 0;
-let storyTargetX = canvas.width / 2;
-let storyTargetY = 100;
 const storyPaddleWidth = 50;
 let storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
+let storyTargetX = canvas.width / 2;
+let storyTargetY = 100;
 let storyHitRegistered = false;
 
 // --- Поп-ап ---
@@ -460,3 +518,4 @@ function draw(){
 }
 
 draw();
+
