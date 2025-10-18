@@ -301,7 +301,7 @@ function drawStoryLevel1() {
 
     // --- Проверяем, упал ли поцелуй ---
     if (kissY > canvas.height - 14) {
-        showPopup("Игра окончена 💔", [
+        showPopup("Подкат провелен 💔", [
             {text:"Ещё раз", action:startStoryLevel1, color:"#4CAF50"},
             {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
         ]);
@@ -426,4 +426,5 @@ function draw(){
 }
 
 draw();
+
 
