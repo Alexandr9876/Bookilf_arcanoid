@@ -3,6 +3,11 @@ const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 document.body.appendChild(canvas);
 
+const FIELD_WIDTH = 300;
+const FIELD_HEIGHT = 500;
+canvas.width = FIELD_WIDTH;
+canvas.height = FIELD_HEIGHT;
+
 canvas.style.position = "absolute";
 canvas.style.left = "50%";
 canvas.style.top = "50%";
@@ -10,80 +15,51 @@ canvas.style.transform = "translate(-50%, -50%)";
 canvas.style.background = "#222";
 canvas.style.touchAction = "none";
 
-// --- Игровые константы ---
+// --- Летающие смайлики в меню ---
+let maleX = 50, maleY = canvas.height - 50, maleDx = 2;
+let femaleX = 250, femaleY = canvas.height - 50, femaleDx = -2;
+
+// --- Вертикально летающие символы пола ---
+let maleSymbolY = canvas.height - 100;
+let femaleSymbolY = canvas.height - 150;
+let maleSymbolDy = 1.2;
+let femaleSymbolDy = 1.5;
+
+// --- Платформа ---
+let paddleWidth = canvas.width * 0.25;
+const paddleHeight = 10;
+let paddleX = (canvas.width - paddleWidth) / 2;
+
+// --- Шарик ---
+const ballRadius = 10;
+let ballX = canvas.width / 2;
+let ballY = canvas.height - 60;
+let dx = 3;
+let dy = -3;
+
+// --- Счет ---
+let score = 0;
+
+// --- Состояние игры ---
+let gameState = "menu"; // menu, playing, story1, popup
+
+// --- Кирпичи ---
 const brickRowCount = 4;
 const brickColumnCount = 6;
 const brickPadding = 5;
 const brickOffsetTop = 40;
 const brickOffsetLeft = 20;
-const paddleHeight = 10;
-const ballRadius = 10;
-const storyPaddleWidth = 50;
-
-// --- Игровые переменные ---
-let paddleWidth, paddleX;
-let ballX, ballY, dx = 3, dy = -3;
+const brickWidth = (canvas.width - 40) / brickColumnCount;
+const brickHeight = 25;
 let bricks = [];
-let brickWidth, brickHeight = 25;
 
-let maleX = 50, maleY = 0, maleDx = 2;
-let femaleX = 250, femaleY = 0, femaleDx = -2;
-let maleSymbolY = 0, femaleSymbolY = 0, maleSymbolDy = 1.2, femaleSymbolDy = 1.5;
-
-let score = 0;
-let gameState = "menu";
-
-let storyTargetX, storyTargetY = 100;
-let storyPaddleX;
-let storyHitRegistered = false;
-let storyDodgeCount = 0;
-
-let kissX, kissY, kdx = 9, kdy = -9;
-let dodgeCount = 0;
-let targetDodging = false;
-
-let popupMessage = "";
-let popupButtons = [];
-
-// --- Функция масштабирования Canvas ---
-function resizeCanvas() {
-    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-
-    if (isMobile) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    } else {
-        canvas.height = window.innerHeight;
-        canvas.width = canvas.height * (3 / 5);
-    }
-
-    // --- Пересчёт размеров игровых объектов ---
-    paddleWidth = canvas.width * 0.25;
-    paddleX = (canvas.width - paddleWidth) / 2;
-
-    ballX = canvas.width / 2;
-    ballY = canvas.height - 60;
-
-    storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
-    storyTargetX = canvas.width / 2;
-
-    maleY = canvas.height - 50;
-    femaleY = canvas.height - 50;
-    maleSymbolY = canvas.height - 100;
-    femaleSymbolY = canvas.height - 150;
-
-    brickWidth = (canvas.width - 40) / brickColumnCount;
-    createBricks();
-}
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
-
-// --- Создание кирпичей ---
 function createBricks() {
     bricks = [];
+
     const totalWidth = brickColumnCount * (brickWidth + brickPadding) - brickPadding;
-    const offsetX = (canvas.width - totalWidth) / 2;
-    const offsetY = 60;
+    const offsetX = (canvas.width - totalWidth) / 2; // центрирование по ширине
+    const offsetY = 60; // отступ сверху
+
     for (let c = 0; c < brickColumnCount; c++) {
         bricks[c] = [];
         for (let r = 0; r < brickRowCount; r++) {
@@ -94,7 +70,20 @@ function createBricks() {
     }
 }
 
-// --- Старт игры ---
+
+// --- Сюжетный уровень ---
+let storyHitCount = 0;
+let storyTargetX = canvas.width / 2;
+let storyTargetY = 100;
+let storyPaddleX = canvas.width / 2 - 25;
+const storyPaddleWidth = 50;
+let storyHitRegistered = false;
+
+// --- Поп-ап ---
+let popupMessage = "";
+let popupButtons = [];
+
+// --- Игровые функции ---
 function startGame() {
     ballX = canvas.width / 2;
     ballY = canvas.height - 60;
@@ -106,16 +95,17 @@ function startGame() {
     gameState = "playing";
 }
 
-// --- Старт сюжетного уровня ---
 function startStoryLevel1() {
-    storyHitRegistered = false;
-    storyDodgeCount = 0;
-    dodgeCount = 0;
-    storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
+    storyHitCount = 0;
     storyTargetX = canvas.width / 2;
+    storyHitRegistered = false;
+    storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
+    storyDodgeCount = 0;
+
     kissX = canvas.width / 2;
     kissY = canvas.height - 60;
 
+    // ✅ добавляем скорость поцелуя (3 раза быстрее обычного шара)
     const kSpeed = 9;
     const kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6;
     kdx = kSpeed * Math.cos(kAngle);
@@ -415,5 +405,3 @@ function draw(){
 }
 
 draw();
-
-
