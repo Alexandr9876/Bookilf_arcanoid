@@ -159,10 +159,12 @@ function drawButton(text, x, y, w, h, color) {
     ctx.fillText(text, x + w / 2, y + h / 2);
 }
 
+
 function drawMenu() {
     ctx.fillStyle = "#111";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // --- Заголовок ---
     const title = "🍑 АРКАНОИД СТРАСТИ 🍌";
     const fontSize = canvas.width < 350 ? 20 : 28;
 
@@ -183,15 +185,30 @@ function drawMenu() {
     ctx.fillStyle = "#fff";
     ctx.fillText(title, canvas.width / 2, rectY + rectHeight / 2);
 
-    // Кнопки
-    const btnY1 = rectY + rectHeight + 20; 
+    // --- Декоративные смайлики кроватей сверху и снизу заголовка ---
+    ctx.font = "24px 'Segoe UI Emoji', Arial";
+    for(let i = 0; i < canvas.width; i += 40) {
+        ctx.fillText("🛏️", i + 20, rectY - 30); // сверху
+        ctx.fillText("🛏️", i + 20, rectY + rectHeight + 20); // снизу
+    }
+
+    // --- Кнопки ---
+    const btnY1 = rectY + rectHeight + 60; 
     const btnY2 = btnY1 + 60;
     drawButton("Играть", canvas.width/2-70, btnY1, 140, 40, "#4CAF50");
     drawButton("Сюжет", canvas.width/2-70, btnY2, 140, 40, "#f44336");
 
+    // --- Декоративные смайлики возле кнопок ---
+    ctx.font = "28px 'Segoe UI Emoji', Arial";
+    ctx.fillText("🛏️", canvas.width/2 - 100, btnY1 + 20); // рядом с первой кнопкой
+    ctx.fillText("🛏️", canvas.width/2 + 100, btnY1 + 20);
+    ctx.fillText("🛏️", canvas.width/2 - 100, btnY2 + 20); // рядом со второй кнопкой
+    ctx.fillText("🛏️", canvas.width/2 + 100, btnY2 + 20);
+
     canvas.menuButtonY1 = btnY1;
     canvas.menuButtonY2 = btnY2;
 }
+
 
 // --- Поп-ап ---
 function showPopup(message, buttons) {
@@ -330,3 +347,4 @@ function draw(){
 }
 
 draw();
+
