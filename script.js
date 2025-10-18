@@ -165,7 +165,7 @@ function drawMenu() {
     ctx.fillText("♀️", 260 + Math.cos(t) * 30, 140 + Math.sin(t) * 40);
 
     // Заголовок
-const title = "🍑 АРКАНОИД СТРАСТИ 🍌";
+const title = "🍑АРКАНОИД СТРАСТИ🍌";
 ctx.font = "28px Arial";
 ctx.textAlign = "center";
 ctx.textBaseline = "middle";
@@ -319,6 +319,7 @@ function draw() {
 
 // --- Запуск игры ---
 draw();
+
 
 
 
