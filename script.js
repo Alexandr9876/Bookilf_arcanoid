@@ -3,7 +3,6 @@ const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 document.body.appendChild(canvas);
 
-// --- Фиксированное поле ---
 const FIELD_WIDTH = 300;
 const FIELD_HEIGHT = 500;
 canvas.width = FIELD_WIDTH;
@@ -16,7 +15,6 @@ canvas.style.transform = "translate(-50%, -50%)";
 canvas.style.background = "#222";
 canvas.style.touchAction = "none";
 canvas.style.userSelect = "none";
-canvas.style.overflow = "hidden";
 
 // --- Платформа ---
 let paddleWidth = canvas.width * 0.25;
@@ -34,7 +32,7 @@ let dy = -3;
 let score = 0;
 
 // --- Состояние игры ---
-let gameState = "menu"; // menu, playing, story1
+let gameState = "menu"; // menu, playing, story1, popup
 
 // --- Кирпичи ---
 const brickRowCount = 4;
@@ -56,12 +54,17 @@ function createBricks() {
     }
 }
 
-// --- Первый уровень сюжета ---
+// --- Сюжетный уровень ---
 let storyHitCount = 0;
 let storyTargetX = canvas.width / 2;
 let storyTargetY = 100;
 let storyPaddleX = canvas.width / 2;
 let storyPaddleWidth = 50;
+let storyHitRegistered = false;
+
+// --- Поп-ап ---
+let popupMessage = "";
+let popupButtons = []; // {text, x, y, w, h, action}
 
 // --- Запуск игры ---
 function startGame() {
@@ -75,28 +78,25 @@ function startGame() {
     gameState = "playing";
 }
 
-// --- Перезапуск игры ---
-function restartGame() {
-    startGame();
-}
-
 // --- Сюжетный уровень ---
 function startStoryLevel1() {
-    gameState = "story1";
     storyHitCount = 0;
+    storyTargetX = canvas.width / 2;
+    storyHitRegistered = false;
     storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
+    gameState = "story1";
 }
 
-// --- Отрисовка шарика и платформ ---
+// --- Рисование ---
 function drawBall() {
-    ctx.font = "28px 'Segoe UI Emoji','Noto Color Emoji','Apple Color Emoji',sans-serif";
+    ctx.font = "28px 'Segoe UI Emoji','Noto Color Emoji','Apple Color Emoji'";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("🍌", x, y);
 }
 
 function drawPaddle() {
-    ctx.font = "36px 'Segoe UI Emoji','Noto Color Emoji','Apple Color Emoji',sans-serif";
+    ctx.font = "36px 'Segoe UI Emoji'";
     ctx.textAlign = "center";
     ctx.fillText("🍆", paddleX + paddleWidth / 2, canvas.height - 30);
 }
@@ -110,7 +110,7 @@ function drawBricks() {
                 const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
                 b.x = brickX;
                 b.y = brickY;
-                ctx.font = "28px 'Segoe UI Emoji','Noto Color Emoji','Apple Color Emoji',sans-serif";
+                ctx.font = "28px 'Segoe UI Emoji'";
                 ctx.textAlign = "center";
                 ctx.fillText("🍑", brickX + brickWidth / 2, brickY + brickHeight / 2);
             }
@@ -136,7 +136,12 @@ function collisionDetection() {
                 dy = -dy;
                 b.status = 0;
                 score++;
-                if (score === brickRowCount * brickColumnCount) showMenu("🎉 Гигант! 🍆🍌🍑");
+                if (score === brickRowCount * brickColumnCount) {
+                    showPopup("🎉 Гигант! 🍆🍌🍑", [
+                        {text: "Еееще...", action: startGame},
+                        {text: "Я спать", action: hideCanvas}
+                    ]);
+                }
             }
         }
     }
@@ -150,256 +155,117 @@ function drawButton(text, x, y, w, h, color) {
     ctx.font = "20px Arial";
     ctx.fillStyle = "#fff";
     ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-    ctx.fillText(text, x + w / 2, y + 26);
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x + w/2, y + h/2);
 }
 
 function drawMenu() {
     ctx.fillStyle = "#111";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Узоры кроватей
-    ctx.font = "28px 'Segoe UI Emoji','Noto Color Emoji','Apple Color Emoji',sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    const cellSize = 60;
-    const startX = cellSize / 2;
-    const startY = cellSize / 2;
-    for (let yPos = startY; yPos < canvas.height; yPos += cellSize) {
-        for (let xPos = startX; xPos < canvas.width; xPos += cellSize) {
-            ctx.fillText("🛏️", xPos, yPos);
-        }
-    }
-
-    // Летающие символы
-    ctx.font = "36px 'Segoe UI Emoji'";
-    const t = Date.now() / 500;
-    ctx.fillText("♂️", 50 + Math.sin(t) * 30, 100 + Math.cos(t) * 40);
-    ctx.fillText("♀️", 260 + Math.cos(t) * 30, 140 + Math.sin(t) * 40);
-
     // Заголовок
     const title = "🍑 АРКАНОИД СТРАСТИ 🍌";
     ctx.font = "28px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const paddingX = 10;
-    const paddingY = 5;
-    const textWidth = ctx.measureText(title).width;
-    const rectX = canvas.width / 2 - textWidth / 2 - paddingX;
-    const rectY = 70 - 28 / 2 - paddingY;
-    const rectWidth = textWidth + paddingX * 2;
-    const rectHeight = 28 + paddingY * 2;
     ctx.fillStyle = "#FF69B4";
-    ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
+    ctx.fillRect(20, 50, canvas.width - 40, 40);
     ctx.fillStyle = "#fff";
-    ctx.fillText(title, canvas.width / 2, 70);
+    ctx.fillText(title, canvas.width/2, 70);
 
     // Кнопки
-    drawButton("Играть", canvas.width / 2 - 70, 300, 140, 40, "#4CAF50");
-    drawButton("Сюжет", canvas.width / 2 - 70, 360, 140, 40, "#f44336");
+    drawButton("Играть", canvas.width/2 - 70, 200, 140, 40, "#4CAF50");
+    drawButton("Сюжет", canvas.width/2 - 70, 260, 140, 40, "#f44336");
 }
 
-// --- Обработчик меню ---
-function handleMenuClick(e) {
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-
-    if (gameState === "menu") {
-        if (x >= 110 && x <= 250 && y >= 300 && y <= 340) startGame();
-        if (x >= 110 && x <= 250 && y >= 360 && y <= 400) startStoryLevel1();
-    }
-}
-
-canvas.addEventListener("click", handleMenuClick);
-canvas.addEventListener("touchstart", handleMenuClick);
-
-// --- Поп-ап после поражения или победы ---
-function showMenu(message) {
-    cancelAnimationFrame(animationId);
-
-    ctx.fillStyle = "rgba(0,0,0,0.7)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = "#fff";
-    ctx.font = "24px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(message, canvas.width / 2, canvas.height / 2 - 50);
-
-    const buttonWidth = 120;
-    const buttonHeight = 40;
-    const startX = canvas.width / 2 - buttonWidth - 10;
-    const exitX = canvas.width / 2 + 10;
-    const buttonY = canvas.height / 2;
-
-    ctx.fillStyle = "#4CAF50";
-    ctx.fillRect(startX, buttonY, buttonWidth, buttonHeight);
-    ctx.fillStyle = "#f44336";
-    ctx.fillRect(exitX, buttonY, buttonWidth, buttonHeight);
-
-    ctx.fillStyle = "#fff";
-    ctx.font = "18px Arial";
-    ctx.fillText("Еееще...", startX + buttonWidth / 2, buttonY + 25);
-    ctx.fillText("Я спать", exitX + buttonWidth / 2, buttonY + 25);
-
-    function clickHandler(e) {
-        let clientX, clientY;
-        if (e.type.startsWith("touch")) {
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        } else {
-            clientX = e.clientX;
-            clientY = e.clientY;
-        }
-        const rect = canvas.getBoundingClientRect();
-        clientX -= rect.left;
-        clientY -= rect.top;
-
-        if (clientX >= startX && clientX <= startX + buttonWidth &&
-            clientY >= buttonY && clientY <= buttonY + buttonHeight) {
-            restartGame();
-            removeListeners();
-        } else if (clientX >= exitX && clientX <= exitX + buttonWidth &&
-                   clientY >= buttonY && clientY <= buttonY + buttonHeight) {
-            hideCanvas();
-            removeListeners();
-        }
-    }
-
-    function removeListeners() {
-        canvas.removeEventListener("click", clickHandler);
-        canvas.removeEventListener("touchstart", clickHandler);
-    }
-
-    canvas.addEventListener("click", clickHandler);
-    canvas.addEventListener("touchstart", clickHandler);
-}
-
-function hideCanvas() {
-    canvas.style.display = "none";
+// --- Поп-ап ---
+function showPopup(message, buttons) {
+    popupMessage = message;
+    popupButtons = buttons;
+    gameState = "popup";
 }
 
 // --- Сюжетный уровень ---
 function drawStoryLevel1() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+    ctx.clearRect(0,0,canvas.width,canvas.height);
     // Платформа
     ctx.font = "36px 'Segoe UI Emoji'";
     ctx.textAlign = "center";
-    ctx.fillText("😊", storyPaddleX + storyPaddleWidth / 2, canvas.height - 30);
+    ctx.fillText("😊", storyPaddleX + storyPaddleWidth/2, canvas.height - 30);
 
     // Поцелуй
     const kissY = canvas.height - 60 - storyHitCount * 40;
     ctx.font = "28px 'Segoe UI Emoji'";
-    ctx.fillText("💋", storyPaddleX + storyPaddleWidth / 2, kissY);
+    ctx.fillText("💋", storyPaddleX + storyPaddleWidth/2, kissY);
 
     // Грустный смайлик
     ctx.fillText(storyHitCount < 5 ? "😢" : "😳", storyTargetX, storyTargetY);
 
     // Логика попадания
-    if (Math.abs((storyPaddleX + storyPaddleWidth/2) - storyTargetX) < 30) {
+    if (!storyHitRegistered && Math.abs((storyPaddleX + storyPaddleWidth/2) - storyTargetX) < 30) {
         storyHitCount++;
-        storyTargetX = Math.random() * (canvas.width - 40) + 20; // меняем позицию смайлика
+        storyHitRegistered = true;
+        storyTargetX = Math.random()*(canvas.width-40)+20;
+    }
+    if (Math.abs((storyPaddleX + storyPaddleWidth/2) - storyTargetX) >= 30) {
+        storyHitRegistered = false;
     }
 
     if (storyHitCount >= 5) {
-        showStoryPopup("Первый шаг — сделан");
+        showPopup("Первый шаг — сделан", [
+            {text: "Продолжить", action: startStoryLevel1},
+            {text: "В главное меню", action: () => gameState="menu"}
+        ]);
     }
 }
 
-// --- Поп-ап сюжетного уровня ---
-function showStoryPopup(message) {
-    cancelAnimationFrame(animationId);
-    ctx.fillStyle = "rgba(0,0,0,0.7)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#fff";
-    ctx.font = "24px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(message, canvas.width / 2, canvas.height / 2 - 50);
+// --- Обработчик кликов ---
+canvas.addEventListener("click", (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
 
-    const buttonWidth = 120;
-    const buttonHeight = 40;
-    const continueX = canvas.width / 2 - buttonWidth - 10;
-    const exitX = canvas.width / 2 + 10;
-    const buttonY = canvas.height / 2;
-
-    ctx.fillStyle = "#4CAF50";
-    ctx.fillRect(continueX, buttonY, buttonWidth, buttonHeight);
-    ctx.fillStyle = "#f44336";
-    ctx.fillRect(exitX, buttonY, buttonWidth, buttonHeight);
-
-    ctx.fillStyle = "#fff";
-    ctx.font = "18px Arial";
-    ctx.fillText("Продолжить", continueX + buttonWidth / 2, buttonY + 25);
-    ctx.fillText("В главное меню", exitX + buttonWidth / 2, buttonY + 25);
-
-    function clickHandler(e) {
-        let clientX, clientY;
-        if (e.type.startsWith("touch")) {
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        } else {
-            clientX = e.clientX;
-            clientY = e.clientY;
+    if (gameState === "menu") {
+        // Играть
+        if (clickX >= canvas.width/2-70 && clickX <= canvas.width/2+70) {
+            if (clickY >= 200 && clickY <= 240) startGame();
+            if (clickY >= 260 && clickY <= 300) startStoryLevel1();
         }
-        const rect = canvas.getBoundingClientRect();
-        clientX -= rect.left;
-        clientY -= rect.top;
-
-        if (clientX >= continueX && clientX <= continueX + buttonWidth &&
-            clientY >= buttonY && clientY <= buttonY + buttonHeight) {
-            // Можно запускать следующий уровень сюжета
-            startStoryLevel1();
-            removeListeners();
-        } else if (clientX >= exitX && clientX <= exitX + buttonWidth &&
-                   clientY >= buttonY && clientY <= buttonY + buttonHeight) {
-            gameState = "menu";
-            removeListeners();
-        }
+    } else if (gameState === "popup") {
+        popupButtons.forEach(btn => {
+            if (clickX >= btn.x && clickX <= btn.x + btn.w &&
+                clickY >= btn.y && clickY <= btn.y + btn.h) {
+                btn.action();
+            }
+        });
     }
-
-    function removeListeners() {
-        canvas.removeEventListener("click", clickHandler);
-        canvas.removeEventListener("touchstart", clickHandler);
-    }
-
-    canvas.addEventListener("click", clickHandler);
-    canvas.addEventListener("touchstart", clickHandler);
-}
+});
 
 // --- Управление свайпом ---
-canvas.addEventListener("touchstart", (e) => e.preventDefault());
-canvas.addEventListener("touchmove", (e) => {
+canvas.addEventListener("touchstart", e => e.preventDefault());
+canvas.addEventListener("touchmove", e => {
     e.preventDefault();
     const touch = e.touches[0];
     const rect = canvas.getBoundingClientRect();
-    let relativeX = touch.clientX - rect.left;
+    const relativeX = touch.clientX - rect.left;
 
     if (gameState === "playing") {
-        paddleX = relativeX - paddleWidth / 2;
-        if (paddleX < 0) paddleX = 0;
-        if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
+        paddleX = relativeX - paddleWidth/2;
+        if (paddleX<0) paddleX=0;
+        if (paddleX+paddleWidth>canvas.width) paddleX=canvas.width-paddleWidth;
     } else if (gameState === "story1") {
-        storyPaddleX = relativeX - storyPaddleWidth / 2;
-        if (storyPaddleX < 0) storyPaddleX = 0;
-        if (storyPaddleX + storyPaddleWidth > canvas.width) storyPaddleX = canvas.width - storyPaddleWidth;
+        storyPaddleX = relativeX - storyPaddleWidth/2;
+        if (storyPaddleX<0) storyPaddleX=0;
+        if (storyPaddleX+storyPaddleWidth>canvas.width) storyPaddleX=canvas.width-storyPaddleWidth;
     }
 });
 
 // --- Основной цикл ---
-let animationId;
 function draw() {
-    animationId = requestAnimationFrame(draw);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    if (gameState === "menu") {
-        drawMenu();
-        return;
-    }
-
-    if (gameState === "playing") {
+    if (gameState === "menu") drawMenu();
+    else if (gameState === "playing") {
         drawBricks();
         drawBall();
         drawPaddle();
@@ -407,20 +273,50 @@ function draw() {
         collisionDetection();
 
         // Отскок шарика
-        if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) dx = -dx;
-        if (y + dy < ballRadius) dy = -dy;
-        else if (y + dy > canvas.height - paddleHeight - ballRadius) {
-            if (x > paddleX && x < paddleX + paddleWidth) dy = -dy;
-            else showMenu("💀 Игра кончила_ся!");
+        if (x+dx>canvas.width-ballRadius || x+dx<ballRadius) dx=-dx;
+        if (y+dy<ballRadius) dy=-dy;
+        else if (y+dy>canvas.height-paddleHeight-ballRadius) {
+            if (x>paddleX && x<paddleX+paddleWidth) dy=-dy;
+            else showPopup("💀 Игра кончила_ся!", [
+                {text:"Еееще...", action:startGame},
+                {text:"Я спать", action:hideCanvas}
+            ]);
         }
 
-        x += dx;
-        y += dy;
-    }
-
-    if (gameState === "story1") {
+        x+=dx;
+        y+=dy;
+    } else if (gameState === "story1") {
         drawStoryLevel1();
     }
+
+    // Рисуем поп-ап поверх всего
+    if (gameState === "popup") {
+        ctx.fillStyle = "rgba(0,0,0,0.7)";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle="#fff";
+        ctx.font="24px Arial";
+        ctx.textAlign="center";
+        ctx.fillText(popupMessage, canvas.width/2, canvas.height/2-50);
+
+        // Кнопки
+        const btnWidth = 140, btnHeight=40;
+        popupButtons.forEach((btn,i)=>{
+            const bx = canvas.width/2 - btnWidth/2;
+            const by = canvas.height/2 + i*50;
+            btn.x=bx; btn.y=by; btn.w=btnWidth; btn.h=btnHeight;
+            ctx.fillStyle = i===0?"#4CAF50":"#f44336";
+            ctx.fillRect(bx,by,btnWidth,btnHeight);
+            ctx.fillStyle="#fff";
+            ctx.font="18px Arial";
+            ctx.fillText(btn.text,bx+btnWidth/2,by+btnHeight/2);
+        });
+    }
+
+    requestAnimationFrame(draw);
+}
+
+function hideCanvas() {
+    canvas.style.display="none";
 }
 
 draw();
