@@ -3,17 +3,48 @@ const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 document.body.appendChild(canvas);
 
-const FIELD_WIDTH = 300;
-const FIELD_HEIGHT = 500;
-canvas.width = FIELD_WIDTH;
-canvas.height = FIELD_HEIGHT;
-
 canvas.style.position = "absolute";
 canvas.style.left = "50%";
 canvas.style.top = "50%";
 canvas.style.transform = "translate(-50%, -50%)";
 canvas.style.background = "#222";
 canvas.style.touchAction = "none";
+
+// --- Масштабирование Canvas ---
+function resizeCanvas() {
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
+    if (isMobile) {
+        // Полный экран на смартфонах
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    } else {
+        // На ПК: высота равна высоте окна, ширина пропорциональна (3:5)
+        canvas.height = window.innerHeight;
+        canvas.width = canvas.height * (3 / 5);
+    }
+
+    // Пересчёт игровых объектов
+    paddleWidth = canvas.width * 0.25;
+    paddleX = (canvas.width - paddleWidth) / 2;
+
+    ballX = canvas.width / 2;
+    ballY = canvas.height - 60;
+
+    storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
+    storyTargetX = canvas.width / 2;
+
+    maleY = canvas.height - 50;
+    femaleY = canvas.height - 50;
+    maleSymbolY = canvas.height - 100;
+    femaleSymbolY = canvas.height - 150;
+
+    brickWidth = (canvas.width - 40) / brickColumnCount;
+    createBricks();
+}
+
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
 
 // --- Летающие смайлики в меню ---
 let maleX = 50, maleY = canvas.height - 50, maleDx = 2;
@@ -49,17 +80,15 @@ const brickColumnCount = 6;
 const brickPadding = 5;
 const brickOffsetTop = 40;
 const brickOffsetLeft = 20;
-const brickWidth = (canvas.width - 40) / brickColumnCount;
+let brickWidth = (canvas.width - 40) / brickColumnCount;
 const brickHeight = 25;
 let bricks = [];
 
 function createBricks() {
     bricks = [];
-
     const totalWidth = brickColumnCount * (brickWidth + brickPadding) - brickPadding;
-    const offsetX = (canvas.width - totalWidth) / 2; // центрирование по ширине
+    const offsetX = (canvas.width - totalWidth) / 2; // центрирование
     const offsetY = 60; // отступ сверху
-
     for (let c = 0; c < brickColumnCount; c++) {
         bricks[c] = [];
         for (let r = 0; r < brickRowCount; r++) {
@@ -69,7 +98,6 @@ function createBricks() {
         }
     }
 }
-
 
 // --- Сюжетный уровень ---
 let storyHitCount = 0;
@@ -105,7 +133,6 @@ function startStoryLevel1() {
     kissX = canvas.width / 2;
     kissY = canvas.height - 60;
 
-    // ✅ добавляем скорость поцелуя (3 раза быстрее обычного шара)
     const kSpeed = 9;
     const kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6;
     kdx = kSpeed * Math.cos(kAngle);
@@ -405,3 +432,4 @@ function draw(){
 }
 
 draw();
+
