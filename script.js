@@ -271,28 +271,41 @@ function drawStoryLevel1() {
     ctx.textAlign = "center";
     ctx.fillText("😎", storyPaddleX + storyPaddleWidth / 2, canvas.height - 30);
 
+    // --- Прямоугольник платформы для коллизий ---
+    const paddleRect = {
+        x: storyPaddleX,
+        y: canvas.height - 30 - 14, // 14 — половина размера смайлика
+        w: storyPaddleWidth,
+        h: 28
+    };
+
     // --- Поцелуй (мяч) ---
     ctx.font = "28px 'Segoe UI Emoji', Arial";
     ctx.fillText("💋", kissX, kissY);
 
     // --- Грустный/смущённый смайлик ---
-    ctx.font = "56px 'Segoe UI Emoji', Arial"; // крупнее в 2 раза
+    ctx.font = "56px 'Segoe UI Emoji', Arial"; // крупнее
     ctx.fillText(dodgeCount < 3 ? "👧" : "💖", storyTargetX, storyTargetY);
 
     // --- Движение поцелуя ---
-    if (kissX + kdx > canvas.width - 10 || kissX + kdx < 10) kdx = -kdx;
-    if (kissY + kdy < 10) kdy = -kdy;
-    else if (kissY + kdy > canvas.height - 60) {
-        if (kissX > storyPaddleX && kissX < storyPaddleX + storyPaddleWidth) {
-            kdy = -kdy;
-        } else {
-            // поцелуй упал
-            showPopup("Игра окончена 💔", [
-                {text:"Ещё раз", action:startStoryLevel1, color:"#4CAF50"},
-                {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
-            ]);
-            return;
-        }
+    if (kissX + kdx > canvas.width - 14 || kissX + kdx < 14) kdx = -kdx;
+    if (kissY + kdy < 14) kdy = -kdy;
+
+    // --- Проверка столкновения с платформой ---
+    const kissRect = { x: kissX - 14, y: kissY - 14, w: 28, h: 28 };
+    if (rectsOverlap(kissRect.x, kissRect.y, kissRect.w, kissRect.h,
+                     paddleRect.x, paddleRect.y, paddleRect.w, paddleRect.h)) {
+        kdy = -kdy;
+        kissY = paddleRect.y - kissRect.h / 2 - 1; // смещаем поцелуй чуть выше
+    }
+
+    // --- Проверяем, упал ли поцелуй ---
+    if (kissY > canvas.height - 14) {
+        showPopup("Игра окончена 💔", [
+            {text:"Ещё раз", action:startStoryLevel1, color:"#4CAF50"},
+            {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
+        ]);
+        return;
     }
 
     kissX += kdx;
@@ -319,6 +332,14 @@ function drawStoryLevel1() {
             {text:"В меню", action:()=>gameState="menu", color:"#f44336"}
         ]);
     }
+}
+
+// --- Функция проверки пересечения прямоугольников ---
+function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2){
+    return x1 < x2 + w2 &&
+           x1 + w1 > x2 &&
+           y1 < y2 + h2 &&
+           y1 + h1 > y2;
 }
 
 
@@ -405,3 +426,4 @@ function draw(){
 }
 
 draw();
+
