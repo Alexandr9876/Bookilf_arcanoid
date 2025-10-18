@@ -165,10 +165,28 @@ function drawMenu() {
     ctx.fillText("♀️", 260 + Math.cos(t) * 30, 140 + Math.sin(t) * 40);
 
     // Заголовок
-    ctx.font = "28px Arial";
-    ctx.fillStyle = "#fff";
-    ctx.textAlign = "center";
-    ctx.fillText("🍑 Арканоид страсти 🍌", canvas.width / 2, 80);
+const title = "🍑 АРКАНОИД СТРАСТИ 🍌";
+ctx.font = "28px Arial";
+ctx.textAlign = "center";
+ctx.textBaseline = "middle";
+
+// Размеры прямоугольника под текст
+const paddingX = 10;
+const paddingY = 5;
+const textWidth = ctx.measureText(title).width;
+const rectX = canvas.width / 2 - textWidth / 2 - paddingX;
+const rectY = 70 - 28 / 2 - paddingY; // 70 — центр текста по Y, 28 — размер шрифта
+const rectWidth = textWidth + paddingX * 2;
+const rectHeight = 28 + paddingY * 2;
+
+// Рисуем цветной прямоугольник
+ctx.fillStyle = "#FF69B4"; // ярко-розовый, можно менять
+ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
+
+// Рисуем текст поверх прямоугольника
+ctx.fillStyle = "#fff";
+ctx.fillText(title, canvas.width / 2, 70);
+
 
     drawButton("Начать", canvas.width / 2 - 70, 300, 140, 40, "#4CAF50");
     drawButton("Обнулиться", canvas.width / 2 - 70, 360, 140, 40, "#f44336");
@@ -301,5 +319,6 @@ function draw() {
 
 // --- Запуск игры ---
 draw();
+
 
 
