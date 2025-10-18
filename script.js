@@ -217,28 +217,59 @@ function showPopup(message, buttons) {
     gameState = "popup";
 }
 
-// --- Сюжетный уровень ---
+// --- Сюжетный уровень: переменные для "поцелуя"
+let kissX = canvas.width / 2;
+let kissY = canvas.height - 60;
+let kSpeed = 4;
+let kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6; // угол между -30° и +30°
+let kdx = kSpeed * Math.cos(kAngle);
+let kdy = -kSpeed * Math.sin(kAngle);
+
 function drawStoryLevel1() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // --- Платформа ---
     ctx.font = "36px 'Segoe UI Emoji', Arial";
     ctx.textAlign = "center";
     ctx.fillText("😊", storyPaddleX + storyPaddleWidth / 2, canvas.height - 30);
 
-    const kissY = canvas.height - 60 - storyHitCount * 40;
+    // --- Поцелуй как шарик ---
     ctx.font = "28px 'Segoe UI Emoji', Arial";
-    ctx.fillText("💋", storyPaddleX + storyPaddleWidth / 2, kissY);
+    ctx.fillText("💋", kissX, kissY);
+
+    // --- Грустный смайлик ---
     ctx.fillText(storyHitCount < 5 ? "😢" : "😳", storyTargetX, storyTargetY);
 
-    if (!storyHitRegistered && Math.abs((storyPaddleX + storyPaddleWidth / 2) - storyTargetX) < 30) {
-        storyHitCount++;
-        storyHitRegistered = true;
-        storyTargetX = Math.random() * (canvas.width - 40) + 20;
-    }
-    if (Math.abs((storyPaddleX + storyPaddleWidth / 2) - storyTargetX) >= 30) {
-        storyHitRegistered = false;
+    // --- Движение поцелуя ---
+    if (kissX + kdx > canvas.width - 10 || kissX + kdx < 10) kdx = -kdx;
+    if (kissY + kdy < 10) kdy = -kdy;
+    else if (kissY + kdy > canvas.height - 60) {
+        if (kissX > storyPaddleX && kissX < storyPaddleX + storyPaddleWidth) {
+            kdy = -kdy;
+            // при каждом отскоке случайный угол
+            kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6;
+            kdx = kSpeed * Math.cos(kAngle);
+            kdy = -Math.abs(kSpeed * Math.sin(kAngle));
+            storyHitCount++;
+        } else {
+            // Поцелуй упал — сброс позиции
+            kissX = canvas.width / 2;
+            kissY = canvas.height - 60;
+            kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6;
+            kdx = kSpeed * Math.cos(kAngle);
+            kdy = -kSpeed * Math.sin(kAngle);
+        }
     }
 
+    kissX += kdx;
+    kissY += kdy;
+
+    // --- Уворот смайлика ---
+    if (Math.abs(kissX - storyTargetX) < 40) {
+        storyTargetX = Math.random() * (canvas.width - 40) + 20;
+    }
+
+    // --- Проверка завершения уровня ---
     if (storyHitCount >= 5) {
         showPopup("Первый шаг — сделан", [
             {text:"Продолжить", action:startStoryLevel1, color:"#4CAF50"},
@@ -347,4 +378,5 @@ function draw(){
 }
 
 draw();
+
 
