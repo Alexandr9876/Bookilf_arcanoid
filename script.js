@@ -142,11 +142,19 @@ function drawMenu() {
     ctx.fillStyle = "#111";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Узоры кроватей
-    ctx.font = "28px 'Segoe UI Emoji'";
-    for (let y = 0; y < canvas.height; y += 60)
-        for (let x = 0; x < canvas.width; x += 60)
-            ctx.fillText("🛏️", x, y);
+    // Узоры кроватей — центрируем по сетке
+    ctx.font = "28px 'Segoe UI Emoji','Noto Color Emoji','Apple Color Emoji',sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+
+    const cellSize = 60; // расстояние между эмодзи
+    const startX = cellSize / 2;
+    const startY = cellSize / 2;
+    for (let yPos = startY; yPos < canvas.height; yPos += cellSize) {
+        for (let xPos = startX; xPos < canvas.width; xPos += cellSize) {
+            ctx.fillText("🛏️", xPos, yPos);
+        }
+    }
 
     // Летающие символы
     ctx.font = "36px 'Segoe UI Emoji'";
@@ -158,7 +166,7 @@ function drawMenu() {
     ctx.font = "28px Arial";
     ctx.fillStyle = "#fff";
     ctx.textAlign = "center";
-    ctx.fillText("🍑 Арканоид любви 🍌", canvas.width / 2, 80);
+    ctx.fillText("🍑 Арканоид страсти 🍌", canvas.width / 2, 80);
 
     drawButton("Начать", canvas.width / 2 - 70, 300, 140, 40, "#4CAF50");
     drawButton("Обнулиться", canvas.width / 2 - 70, 360, 140, 40, "#f44336");
@@ -291,3 +299,4 @@ function draw() {
 
 // --- Запуск игры ---
 draw();
+
