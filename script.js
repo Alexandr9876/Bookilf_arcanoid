@@ -19,6 +19,12 @@ canvas.style.touchAction = "none";
 let maleX = 50, maleY = canvas.height - 50, maleDx = 2;
 let femaleX = 250, femaleY = canvas.height - 50, femaleDx = -2;
 
+// --- Вертикально летающие символы пола ---
+let maleSymbolY = canvas.height - 100;
+let femaleSymbolY = canvas.height - 150;
+let maleSymbolDy = 1.2;
+let femaleSymbolDy = 1.5;
+
 // --- Платформа ---
 let paddleWidth = canvas.width * 0.25;
 const paddleHeight = 10;
@@ -223,6 +229,19 @@ function drawMenu() {
     maleX += maleDx; if(maleX<20||maleX>canvas.width-20) maleDx=-maleDx;
     femaleX += femaleDx; if(femaleX<20||femaleX>canvas.width-20) femaleDx=-femaleDx;
     canvas.menuButtonY1=btnY1; canvas.menuButtonY2=btnY2;
+
+        // --- Вертикально движущиеся символы пола ---
+    ctx.font = "28px 'Segoe UI Emoji', Arial";
+    ctx.fillText("♂️", canvas.width / 2 - 40, maleSymbolY);
+    ctx.fillText("♀️", canvas.width / 2 + 40, femaleSymbolY);
+
+    // --- Движение вверх-вниз ---
+    maleSymbolY += maleSymbolDy;
+    femaleSymbolY += femaleSymbolDy;
+
+    if (maleSymbolY > canvas.height - 40 || maleSymbolY < canvas.height - 120) maleSymbolDy = -maleSymbolDy;
+    if (femaleSymbolY > canvas.height - 60 || femaleSymbolY < canvas.height - 140) femaleSymbolDy = -femaleSymbolDy;
+
 }
 
 // --- Поп-ап ---
@@ -382,6 +401,7 @@ function draw(){
 }
 
 draw();
+
 
 
 
