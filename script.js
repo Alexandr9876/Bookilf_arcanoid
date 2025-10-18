@@ -144,7 +144,7 @@ function collisionDetection() {
                 if (score === brickRowCount * brickColumnCount) {
                     showPopup("🎉 Гигант! 🍆🍌🍑", [
                         {text: "Еееще...", action: startGame, color:"#4CAF50"},
-                        {text: "Я спать", action: hideCanvas, color:"#f44336"}
+                        {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
                     ]);
                 }
             }
@@ -370,7 +370,7 @@ function draw(){
             if(ballX > paddleX && ballX < paddleX + paddleWidth) dy = -dy;
             else showPopup("💀 Игра кончила_ся!", [
                 {text:"Еееще...", action:startGame, color:"#4CAF50"},
-                {text:"Я спать", action:hideCanvas, color:"#f44336"}
+                {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
             ]);
         }
 
@@ -409,6 +409,7 @@ function draw(){
 }
 
 draw();
+
 
 
 
