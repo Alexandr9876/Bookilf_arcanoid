@@ -307,8 +307,6 @@ function drawStoryLevel1() {
     }
 }
 
-}
-
 // --- Обработчик касаний и кликов ---
 function handlePointer(e){
     e.preventDefault();
@@ -409,6 +407,7 @@ function draw(){
 }
 
 draw();
+
 
 
 
