@@ -287,8 +287,8 @@ function drawStoryLevel1() {
             kdy = -kdy;
         } else {
             // поцелуй упал
-            showPopup("Игра окончена 💔", [
-                {text:"Ещё раз", action:startStoryLevel1, color:"#4CAF50"},
+            showPopup("Подкат провален 💔", [
+                {text:"Еще раз", action:startStoryLevel1, color:"#4CAF50"},
                 {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
             ]);
             return;
@@ -312,14 +312,19 @@ function drawStoryLevel1() {
         setTimeout(()=> targetDodging = false, 800);
     }
 
-    // --- Когда после 3 уворотов попал ---
-    if (distance < 50 && dodgeCount >= 3) {
-        showPopup("Первый шаг — сделан 💞", [
-            {text:"Продолжить", action:startStoryLevel1, color:"#4CAF50"},
-            {text:"В меню", action:()=>gameState="menu", color:"#f44336"}
-        ]);
-    }
+    if (distance < 50 && dodgeCount >= 3 && !storyHitRegistered) {
+    storyHitRegistered = true; // чтобы попап не вызывался каждый кадр
+    // даём один кадр на отрисовку ❤️
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            showPopup("Первый шаг — сделан 💞", [
+                {text:"Продолжить", action:startStoryLevel1, color:"#4CAF50"},
+                {text:"В меню", action:()=>gameState="menu", color:"#f44336"}
+            ]);
+        }, 50); // 50ms 
+    });
 }
+
 
 
 // --- Обработчик касаний и кликов ---
@@ -405,6 +410,7 @@ function draw(){
 }
 
 draw();
+
 
 
 
