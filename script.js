@@ -1,228 +1,284 @@
-// --- Настройка Canvas ---
-const canvas = document.createElement("canvas");
+const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-document.body.appendChild(canvas);
 
-// --- Фиксированное поле ---
-const FIELD_WIDTH = 300;
-const FIELD_HEIGHT = 500;
-canvas.width = FIELD_WIDTH;
-canvas.height = FIELD_HEIGHT;
-
-canvas.style.position = "absolute";
-canvas.style.left = "50%";
-canvas.style.top = "50%";
-canvas.style.transform = "translate(-50%, -50%)";
-canvas.style.background = "#222";
-canvas.style.touchAction = "none";
-canvas.style.userSelect = "none";
-canvas.style.overflow = "hidden";
-
-// --- Платформа ---
-let paddleWidth = canvas.width * 0.25;
-const paddleHeight = 10;
-let paddleX = (canvas.width - paddleWidth) / 2;
-
-// --- Шарик ---
-const ballRadius = 10;
-let x = canvas.width / 2;
-let y = canvas.height - 60;
-let dx = 3;
-let dy = -3;
-
-// --- Кирпичи ---
-const brickRowCount = 4;
-const brickColumnCount = 6;
-const brickPadding = 5;
-const brickOffsetTop = 40;
-const brickOffsetLeft = 20;
-const brickWidth = (canvas.width - 40) / brickColumnCount;
-const brickHeight = 25;
+let paddle = { x: 160, y: 570, w: 80, h: 20 };
+let ball = { x: 200, y: 300, dx: 2, dy: -2, r: 10 };
 let bricks = [];
-
-function createBricks() {
-    bricks = [];
-    for (let c = 0; c < brickColumnCount; c++) {
-        bricks[c] = [];
-        for (let r = 0; r < brickRowCount; r++) {
-            bricks[c][r] = { x: 0, y: 0, status: 1 };
-        }
-    }
-}
-createBricks();
-
-// --- Счет ---
 let score = 0;
+let level = 1;
+let gameState = "menu"; // menu | level1 | game
+let dodges = 0; // для первого тура
 
-// --- Управление свайпом ---
-canvas.addEventListener("touchstart", (e) => e.preventDefault());
-canvas.addEventListener("touchmove", (e) => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    const rect = canvas.getBoundingClientRect();
-    let relativeX = touch.clientX - rect.left;
-    paddleX = relativeX - paddleWidth / 2;
-    if (paddleX < 0) paddleX = 0;
-    if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
+const rows = 4;
+const cols = 6;
+const brickW = 60;
+const brickH = 20;
+
+function saveProgress() {
+  localStorage.setItem("level", level);
+  localStorage.setItem("score", score);
+}
+
+function loadProgress() {
+  level = parseInt(localStorage.getItem("level") || "1");
+  score = parseInt(localStorage.getItem("score") || "0");
+}
+
+function resetProgress() {
+  localStorage.removeItem("level");
+  localStorage.removeItem("score");
+  level = 1;
+  score = 0;
+}
+
+// 🌈 Главное меню
+let flyingIcons = Array.from({ length: 10 }, () => ({
+  x: Math.random() * 400,
+  y: Math.random() * 600,
+  dx: (Math.random() - 0.5) * 1.5,
+  dy: (Math.random() - 0.5) * 1.5,
+  emoji: Math.random() > 0.5 ? "♂️" : "♀️"
+}));
+
+function drawMenu() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // фон — кровати узором
+  for (let x = 0; x < canvas.width; x += 60) {
+    for (let y = 0; y < canvas.height; y += 60) {
+      ctx.font = "30px Arial";
+      ctx.fillText("🛏️", x, y + 30);
+    }
+  }
+
+  // летающие смайлы
+  for (let i of flyingIcons) {
+    ctx.fillText(i.emoji, i.x, i.y);
+    i.x += i.dx;
+    i.y += i.dy;
+    if (i.x < 0 || i.x > 400) i.dx *= -1;
+    if (i.y < 0 || i.y > 600) i.dy *= -1;
+  }
+
+  // текст
+  ctx.font = "28px Arial";
+  ctx.fillStyle = "#fff";
+  ctx.fillText("🔥 Арканоид страсти 🔥", 70, 120);
+
+  // кнопки
+  drawButton(130, 250, "Начать");
+  drawButton(130, 320, "Обнулиться");
+}
+
+function drawButton(x, y, text) {
+  ctx.fillStyle = "rgba(255,255,255,0.2)";
+  ctx.fillRect(x - 10, y - 25, 150, 40);
+  ctx.font = "20px Arial";
+  ctx.fillStyle = "#fff";
+  ctx.fillText(text, x, y);
+}
+
+// Проверка клика по кнопке
+canvas.addEventListener("click", e => {
+  let rect = canvas.getBoundingClientRect();
+  let mx = e.clientX - rect.left;
+  let my = e.clientY - rect.top;
+
+  if (gameState === "menu") {
+    if (mx > 120 && mx < 280 && my > 230 && my < 270) {
+      loadProgress();
+      if (level === 1) gameState = "level1";
+      else gameState = "game";
+      createBricks();
+    }
+    if (mx > 120 && mx < 280 && my > 300 && my < 340) {
+      resetProgress();
+    }
+  } else if (gameState === "endOfLevel1") {
+    // кнопки в конце первого тура
+    if (mx > 100 && mx < 200 && my > 300 && my < 340) startLevel1();
+    if (mx > 220 && mx < 340 && my > 300 && my < 340) {
+      gameState = "game";
+      level = 2;
+      createBricks();
+    }
+    if (mx > 150 && mx < 300 && my > 360 && my < 400) gameState = "menu";
+  }
 });
 
-// --- Отрисовка объектов ---
-function drawBall() {
-    ctx.font = "28px 'Segoe UI Emoji','Noto Color Emoji','Apple Color Emoji',sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("🍌", x, y);
+// 🎮 Первый уровень
+let peach = { x: 170, y: 200, w: 60, h: 60, dodge: false };
+
+function startLevel1() {
+  gameState = "level1";
+  paddle = { x: 160, y: 570, w: 80, h: 20 };
+  ball = { x: 200, y: 500, dx: 0, dy: -4, r: 10 };
+  dodges = 0;
 }
 
+function drawLevel1() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // рисуем перчик
+  ctx.font = "30px Arial";
+  ctx.fillText("🌶️", paddle.x + 25, paddle.y + 20);
+
+  // рисуем шар (палка)
+  ctx.fillText("🍆", ball.x - 10, ball.y + 8);
+
+  // рисуем персик
+  ctx.fillText("🍑", peach.x, peach.y);
+
+  ball.x += ball.dx;
+  ball.y += ball.dy;
+
+  // отражения
+  if (ball.x < 10 || ball.x > 390) ball.dx *= -1;
+  if (ball.y < 10) ball.dy *= -1;
+
+  // отражение от перчика
+  if (
+    ball.y > paddle.y - 10 &&
+    ball.x > paddle.x &&
+    ball.x < paddle.x + paddle.w
+  ) {
+    ball.dy *= -1;
+  }
+
+  // увертливый персик
+  if (
+    Math.abs(ball.x - peach.x) < 30 &&
+    Math.abs(ball.y - peach.y) < 30 &&
+    dodges < 5
+  ) {
+    // увернулся
+    peach.x = 50 + Math.random() * 300;
+    peach.y = 100 + Math.random() * 200;
+    dodges++;
+    ball.dy *= -1;
+  } else if (
+    Math.abs(ball.x - peach.x) < 30 &&
+    Math.abs(ball.y - peach.y) < 30 &&
+    dodges >= 5
+  ) {
+    // попал!
+    gameState = "endOfLevel1";
+  }
+
+  // движение мышью
+  document.addEventListener("mousemove", e => {
+    let rect = canvas.getBoundingClientRect();
+    paddle.x = e.clientX - rect.left - paddle.w / 2;
+  });
+}
+
+function drawEndLevel1() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.font = "22px Arial";
+  ctx.fillStyle = "#fff";
+  ctx.fillText(
+    "В первый раз всегда так... Неловко, странно, но приятно!",
+    15,
+    200
+  );
+  drawButton(120, 320, "Ещё!");
+  drawButton(240, 320, "Сменим позу");
+  drawButton(160, 380, "Я спать...");
+}
+
+// 🎯 Основные уровни (твой текущий геймплей)
+function createBricks() {
+  bricks = [];
+  for (let r = 0; r < rows + level - 1; r++) {
+    for (let c = 0; c < cols; c++) {
+      bricks.push({ x: 20 + c * 65, y: 40 + r * 30, hit: false });
+    }
+  }
+}
+
+document.addEventListener("mousemove", e => {
+  if (gameState === "game") {
+    let rect = canvas.getBoundingClientRect();
+    paddle.x = e.clientX - rect.left - paddle.w / 2;
+  }
+});
+
 function drawPaddle() {
-    ctx.font = "36px 'Segoe UI Emoji','Noto Color Emoji','Apple Color Emoji',sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("🍆", paddleX + paddleWidth / 2, canvas.height - 30);
+  ctx.font = "24px Arial";
+  ctx.fillText("🌶️", paddle.x + 25, paddle.y + 18);
+}
+
+function drawBall() {
+  ctx.font = "24px Arial";
+  ctx.fillText("🍆", ball.x - 8, ball.y + 8);
 }
 
 function drawBricks() {
-    for (let c = 0; c < brickColumnCount; c++) {
-        for (let r = 0; r < brickRowCount; r++) {
-            const b = bricks[c][r];
-            if (b.status === 1) {
-                const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
-                const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
-                b.x = brickX;
-                b.y = brickY;
-                ctx.font = "28px 'Segoe UI Emoji','Noto Color Emoji','Apple Color Emoji',sans-serif";
-                ctx.textAlign = "center";
-                ctx.fillText("🍑", brickX + brickWidth / 2, brickY + brickHeight / 2);
-            }
-        }
-    }
+  ctx.font = "24px Arial";
+  for (let b of bricks) {
+    if (!b.hit) ctx.fillText("🍑", b.x, b.y + 18);
+  }
 }
 
 function drawScore() {
-    ctx.font = "20px Arial";
-    ctx.fillStyle = "#fff";
-    ctx.textAlign = "left";
-    ctx.fillText("Обананеных персиков: " + score, 10, 25);
+  ctx.font = "20px Arial";
+  ctx.fillStyle = "#fff";
+  ctx.fillText("Счёт: " + score + "  Уровень: " + level, 10, 20);
 }
 
-// --- Проверка столкновений ---
-function collisionDetection() {
-    for (let c = 0; c < brickColumnCount; c++) {
-        for (let r = 0; r < brickRowCount; r++) {
-            const b = bricks[c][r];
-            if (b.status === 1 &&
-                x > b.x && x < b.x + brickWidth &&
-                y > b.y && y < b.y + brickHeight) {
-                dy = -dy;
-                b.status = 0;
-                score++;
-                if (score === brickRowCount * brickColumnCount) showMenu("🎉 Гигант! 🍆🍌🍑");
-            }
-        }
+function drawGame() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBricks();
+  drawPaddle();
+  drawBall();
+  drawScore();
+
+  ball.x += ball.dx;
+  ball.y += ball.dy;
+
+  if (ball.x < 10 || ball.x > 390) ball.dx *= -1;
+  if (ball.y < 10) ball.dy *= -1;
+
+  if (
+    ball.y > paddle.y - 10 &&
+    ball.x > paddle.x &&
+    ball.x < paddle.x + paddle.w
+  ) {
+    ball.dy *= -1;
+  }
+
+  for (let b of bricks) {
+    if (!b.hit && ball.x > b.x && ball.x < b.x + brickW && ball.y > b.y && ball.y < b.y + brickH) {
+      b.hit = true;
+      ball.dy *= -1;
+      score += 10;
+      saveProgress();
     }
-}
+  }
 
-// --- Меню ---
-let animationId;
-function showMenu(message) {
-    cancelAnimationFrame(animationId);
-
-    ctx.fillStyle = "rgba(0,0,0,0.7)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = "#fff";
-    ctx.font = "24px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(message, canvas.width / 2, canvas.height / 2 - 50);
-
-    const buttonWidth = 120;
-    const buttonHeight = 40;
-    const startX = canvas.width / 2 - buttonWidth - 10;
-    const exitX = canvas.width / 2 + 10;
-    const buttonY = canvas.height / 2;
-
-    ctx.fillStyle = "#4CAF50";
-    ctx.fillRect(startX, buttonY, buttonWidth, buttonHeight);
-    ctx.fillStyle = "#f44336";
-    ctx.fillRect(exitX, buttonY, buttonWidth, buttonHeight);
-
-    ctx.fillStyle = "#fff";
-    ctx.font = "18px Arial";
-    ctx.fillText("Еееще...", startX + buttonWidth / 2, buttonY + 25);
-    ctx.fillText("Я спать", exitX + buttonWidth / 2, buttonY + 25);
-
-    function clickHandler(e) {
-        let clientX, clientY;
-        if (e.type.startsWith("touch")) {
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        } else {
-            clientX = e.clientX;
-            clientY = e.clientY;
-        }
-
-        const rect = canvas.getBoundingClientRect();
-        clientX -= rect.left;
-        clientY -= rect.top;
-
-        if (clientX >= startX && clientX <= startX + buttonWidth &&
-            clientY >= buttonY && clientY <= buttonY + buttonHeight) {
-            restartGame();
-            removeListeners();
-        } else if (clientX >= exitX && clientX <= exitX + buttonWidth &&
-                   clientY >= buttonY && clientY <= buttonY + buttonHeight) {
-            hideCanvas();
-            removeListeners();
-        }
-    }
-
-    function removeListeners() {
-        canvas.removeEventListener("click", clickHandler);
-        canvas.removeEventListener("touchstart", clickHandler);
-    }
-
-    canvas.addEventListener("click", clickHandler);
-    canvas.addEventListener("touchstart", clickHandler);
-}
-
-function hideCanvas() {
-    canvas.style.display = "none";
-}
-
-// --- Перезапуск игры ---
-function restartGame() {
-    x = canvas.width / 2;
-    y = canvas.height - 60;
-    dx = 3;
-    dy = -3;
-    paddleX = (canvas.width - paddleWidth) / 2;
-    score = 0;
+  if (bricks.every(b => b.hit)) {
+    level++;
+    ball.x = 200;
+    ball.y = 300;
+    ball.dx = 2 + level * 0.5;
+    ball.dy = -2 - level * 0.5;
     createBricks();
-    draw();
+  }
+
+  if (ball.y > 600) {
+    alert("Игра окончена! Счёт: " + score);
+    resetProgress();
+    document.location.reload();
+  }
 }
 
-// --- Основной цикл ---
-function draw() {
-    animationId = requestAnimationFrame(draw);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function loop() {
+  if (gameState === "menu") drawMenu();
+  else if (gameState === "level1") drawLevel1();
+  else if (gameState === "endOfLevel1") drawEndLevel1();
+  else if (gameState === "game") drawGame();
 
-    drawBricks();
-    drawBall();
-    drawPaddle();
-    drawScore();
-    collisionDetection();
-
-    // Отскок шарика от стен
-    if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) dx = -dx;
-    if (y + dy < ballRadius) dy = -dy;
-    else if (y + dy > canvas.height - 40) {
-        if (x > paddleX && x < paddleX + paddleWidth) dy = -dy;
-        else showMenu("💀 Игра кончила_ся!");
-    }
-
-    x += dx;
-    y += dy;
+  requestAnimationFrame(loop);
 }
 
-// --- Запуск игры ---
-draw();
-
+loop();
