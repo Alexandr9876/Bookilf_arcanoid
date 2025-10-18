@@ -117,14 +117,14 @@ function startStoryLevel1() {
 
 // --- Рисование ---
 function drawBall() {
-    ctx.font = "28px 'Segoe UI Emoji', Arial";
+    ctx.font = "28px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("🍌", ballX, ballY);
 }
 
 function drawPaddle() {
-    ctx.font = "36px 'Segoe UI Emoji', Arial";
+   ctx.font = "36px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("🍆", paddleX + paddleWidth / 2, canvas.height - 30);
 }
@@ -141,7 +141,7 @@ function drawBricks() {
                 const brickY = brickOffsetTop + r * (brickHeight + brickPadding);
                 b.x = brickX;
                 b.y = brickY;
-                ctx.font = "28px 'Segoe UI Emoji', Arial";
+                ctx.font = "28px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
                 ctx.textAlign = "center";
                 ctx.fillText("🍑", brickX + brickWidth / 2, brickY + brickHeight / 2);
             }
@@ -405,6 +405,7 @@ function draw(){
 }
 
 draw();
+
 
 
 
