@@ -218,61 +218,72 @@ function showPopup(message, buttons) {
     gameState = "popup";
 }
 
-// --- Сюжетный уровень ---
+// --- Сюжетный уровень: переменные для "поцелуя"
 let kissX = canvas.width / 2;
 let kissY = canvas.height - 60;
-let kSpeed = 6;
-let kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6;
-let kdx = kSpeed * Math.cos(kAngle);
-let kdy = -kSpeed * Math.sin(kAngle);
-let storyDodgeCount = 0;
+let kdx = 9; // в 3 раза быстрее
+let kdy = -9;
+let dodgeCount = 0;
+let targetDodging = false;
 
 function drawStoryLevel1() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.font = "36px 'Segoe UI Emoji', Arial";
+    // --- Платформа (смайлик в очках) ---
+    ctx.font = "28px 'Segoe UI Emoji', Arial";
     ctx.textAlign = "center";
     ctx.fillText("😎", storyPaddleX + storyPaddleWidth / 2, canvas.height - 30);
 
+    // --- Поцелуй (мяч) ---
     ctx.font = "28px 'Segoe UI Emoji', Arial";
     ctx.fillText("💋", kissX, kissY);
 
-    ctx.fillText(storyDodgeCount < 3 ? "😢" : "😳", storyTargetX, storyTargetY);
+    // --- Грустный/смущённый смайлик ---
+    ctx.font = "56px 'Segoe UI Emoji', Arial"; // крупнее в 2 раза
+    ctx.fillText(dodgeCount < 3 ? "😢" : "😳", storyTargetX, storyTargetY);
 
+    // --- Движение поцелуя ---
     if (kissX + kdx > canvas.width - 10 || kissX + kdx < 10) kdx = -kdx;
     if (kissY + kdy < 10) kdy = -kdy;
     else if (kissY + kdy > canvas.height - 60) {
         if (kissX > storyPaddleX && kissX < storyPaddleX + storyPaddleWidth) {
-            kdy = -Math.abs(kdy);
-            kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6;
-            kdx = kSpeed * Math.cos(kAngle);
-            kdy = -Math.abs(kSpeed * Math.sin(kAngle));
-
-            if (storyDodgeCount < 3) {
-                storyDodgeCount++;
-                storyTargetX = Math.random() * (canvas.width - 40) + 20;
-            } else {
-                storyDodgeCount = 4;
-                showPopup("Первый шаг — сделан", [
-                    {text:"Продолжить", action:startStoryLevel1, color:"#4CAF50"},
-                    {text:"В главное меню", action:()=>gameState="menu", color:"#f44336"}
-                ]);
-            }
+            kdy = -kdy;
         } else {
-            kissX = canvas.width / 2;
-            kissY = canvas.height - 60;
-            kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6;
-            kdx = kSpeed * Math.cos(kAngle);
-            kdy = -kSpeed * Math.sin(kAngle);
+            // поцелуй упал
+            showPopup("Игра окончена 💔", [
+                {text:"Ещё раз", action:startStoryLevel1, color:"#4CAF50"},
+                {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
+            ]);
+            return;
         }
     }
 
     kissX += kdx;
     kissY += kdy;
 
-    if (Math.abs(kissX - storyTargetX) < 40 && storyDodgeCount < 3)
-        storyTargetX = Math.random() * (canvas.width - 40) + 20;
+    // --- Проверяем, летит ли поцелуй прямо в грустного ---
+    const dxToTarget = storyTargetX - kissX;
+    const dyToTarget = storyTargetY - kissY;
+    const distance = Math.sqrt(dxToTarget*dxToTarget + dyToTarget*dyToTarget);
+
+    // если поцелуй близко летит к цели — увернуться
+    if (distance < 60 && dodgeCount < 3 && !targetDodging) {
+        storyTargetX = Math.random() * (canvas.width - 80) + 40;
+        storyTargetY = Math.random() * (canvas.height / 2 - 80) + 40;
+        dodgeCount++;
+        targetDodging = true;
+        setTimeout(()=> targetDodging = false, 800);
+    }
+
+    // --- Когда после 3 уворотов попал ---
+    if (distance < 50 && dodgeCount >= 3) {
+        showPopup("Первый шаг — сделан 💞", [
+            {text:"Продолжить", action:startStoryLevel1, color:"#4CAF50"},
+            {text:"В меню", action:()=>gameState="menu", color:"#f44336"}
+        ]);
+    }
 }
+
 
 // --- Обработчик касаний и кликов ---
 function handlePointer(e){
@@ -357,3 +368,4 @@ function draw(){
 }
 
 draw();
+
