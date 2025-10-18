@@ -49,13 +49,21 @@ let bricks = [];
 
 function createBricks() {
     bricks = [];
+
+    const totalWidth = brickColumnCount * (brickWidth + brickPadding) - brickPadding;
+    const offsetX = (canvas.width - totalWidth) / 2; // центрирование по ширине
+    const offsetY = 60; // отступ сверху
+
     for (let c = 0; c < brickColumnCount; c++) {
         bricks[c] = [];
         for (let r = 0; r < brickRowCount; r++) {
-            bricks[c][r] = { x: 0, y: 0, status: 1 };
+            const brickX = offsetX + c * (brickWidth + brickPadding);
+            const brickY = offsetY + r * (brickHeight + brickPadding);
+            bricks[c][r] = { x: brickX, y: brickY, status: 1 };
         }
     }
 }
+
 
 // --- Сюжетный уровень ---
 let storyHitCount = 0;
@@ -368,4 +376,5 @@ function draw(){
 }
 
 draw();
+
 
