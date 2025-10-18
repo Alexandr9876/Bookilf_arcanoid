@@ -15,40 +15,6 @@ canvas.style.transform = "translate(-50%, -50%)";
 canvas.style.background = "#222";
 canvas.style.touchAction = "none";
 
-function resizeCanvas() {
-    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-
-    if (isMobile) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    } else {
-        // ПК: подстраиваем по вертикали
-        canvas.height = window.innerHeight;
-        canvas.width = canvas.height * (FIELD_WIDTH / FIELD_HEIGHT); // сохраняем пропорцию 3:5
-    }
-
-    canvas.style.position = "absolute";
-    canvas.style.left = "50%";
-    canvas.style.top = "50%";
-    canvas.style.transform = "translate(-50%, -50%)";
-
-    // Обновляем размеры игровых объектов
-    paddleWidth = canvas.width * 0.25;
-    paddleX = (canvas.width - paddleWidth) / 2;
-
-    storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
-    storyTargetX = canvas.width / 2;
-    kissX = canvas.width / 2;
-
-    createBricks(); // пересоздаём кирпичи
-}
-
-// --- вызов при старте ---
-resizeCanvas();
-
-// --- вызов при изменении размера окна ---
-window.addEventListener("resize", resizeCanvas);
-
 // --- Летающие смайлики в меню ---
 let maleX = 50, maleY = canvas.height - 50, maleDx = 2;
 let femaleX = 250, femaleY = canvas.height - 50, femaleDx = -2;
@@ -321,8 +287,8 @@ function drawStoryLevel1() {
             kdy = -kdy;
         } else {
             // поцелуй упал
-            showPopup("Подкат провален 💔", [
-                {text:"Еще раз", action:startStoryLevel1, color:"#4CAF50"},
+            showPopup("Игра окончена 💔", [
+                {text:"Ещё раз", action:startStoryLevel1, color:"#4CAF50"},
                 {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
             ]);
             return;
@@ -346,19 +312,14 @@ function drawStoryLevel1() {
         setTimeout(()=> targetDodging = false, 800);
     }
 
-    if (distance < 50 && dodgeCount >= 3 && !storyHitRegistered) {
-    storyHitRegistered = true; // чтобы попап не вызывался каждый кадр
-    // даём один кадр на отрисовку ❤️
-    requestAnimationFrame(() => {
-        setTimeout(() => {
-            showPopup("Первый шаг — сделан 💞", [
-                {text:"Продолжить", action:startStoryLevel1, color:"#4CAF50"},
-                {text:"В меню", action:()=>gameState="menu", color:"#f44336"}
-            ]);
-        }, 50); // 50ms 
-    });
+    // --- Когда после 3 уворотов попал ---
+    if (distance < 50 && dodgeCount >= 3) {
+        showPopup("Первый шаг — сделан 💞", [
+            {text:"Продолжить", action:startStoryLevel1, color:"#4CAF50"},
+            {text:"В меню", action:()=>gameState="menu", color:"#f44336"}
+        ]);
+    }
 }
-
 
 
 // --- Обработчик касаний и кликов ---
