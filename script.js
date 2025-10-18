@@ -15,6 +15,10 @@ canvas.style.transform = "translate(-50%, -50%)";
 canvas.style.background = "#222";
 canvas.style.touchAction = "none";
 
+// --- Летающие смайлики в меню ---
+let maleX = 50, maleY = canvas.height - 50, maleDx = 2;
+let femaleX = 250, femaleY = canvas.height - 50, femaleDx = -2;
+
 // --- Платформа ---
 let paddleWidth = canvas.width * 0.25;
 const paddleHeight = 10;
@@ -168,7 +172,7 @@ function drawMenu() {
     const title = "🍑 АРКАНОИД СТРАСТИ 🍌";
     const fontSize = canvas.width < 350 ? 20 : 28;
 
-    ctx.font = fontSize + "px Arial";
+    ctx.font = fontSize + "px 'Segoe UI Emoji', Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
@@ -205,6 +209,17 @@ function drawMenu() {
     ctx.fillText("🛏️", canvas.width/2 - 100, btnY2 + 20); // рядом со второй кнопкой
     ctx.fillText("🛏️", canvas.width/2 + 100, btnY2 + 20);
 
+    // --- Летающие смайлики внизу ---
+    ctx.font = "32px 'Segoe UI Emoji', Arial";
+    ctx.fillText("👨", maleX, maleY);
+    ctx.fillText("👩", femaleX, femaleY);
+
+    // --- Обновление их позиции ---
+    maleX += maleDx;
+    if(maleX < 20 || maleX > canvas.width - 20) maleDx = -maleDx;
+
+    femaleX += femaleDx;
+    if(femaleX < 20 || femaleX > canvas.width - 20) femaleDx = -femaleDx;
     canvas.menuButtonY1 = btnY1;
     canvas.menuButtonY2 = btnY2;
 }
@@ -217,13 +232,14 @@ function showPopup(message, buttons) {
     gameState = "popup";
 }
 
-// --- Сюжетный уровень: переменные для "поцелуя"
+// --- Сюжетный уровень: переменные ---
 let kissX = canvas.width / 2;
 let kissY = canvas.height - 60;
-let kSpeed = 4;
-let kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6; // угол между -30° и +30°
+let kSpeed = 6; // увеличенная скорость
+let kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6;
 let kdx = kSpeed * Math.cos(kAngle);
 let kdy = -kSpeed * Math.sin(kAngle);
+let storyDodgeCount = 0; // счетчик уклонений
 
 function drawStoryLevel1() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -231,26 +247,38 @@ function drawStoryLevel1() {
     // --- Платформа ---
     ctx.font = "36px 'Segoe UI Emoji', Arial";
     ctx.textAlign = "center";
-    ctx.fillText("😊", storyPaddleX + storyPaddleWidth / 2, canvas.height - 30);
+    ctx.fillText("😎", storyPaddleX + storyPaddleWidth / 2, canvas.height - 30);
 
-    // --- Поцелуй как шарик ---
+    // --- Поцелуй ---
     ctx.font = "28px 'Segoe UI Emoji', Arial";
     ctx.fillText("💋", kissX, kissY);
 
     // --- Грустный смайлик ---
-    ctx.fillText(storyHitCount < 5 ? "😢" : "😳", storyTargetX, storyTargetY);
+    ctx.fillText(storyDodgeCount < 3 ? "😢" : "😳", storyTargetX, storyTargetY);
 
     // --- Движение поцелуя ---
     if (kissX + kdx > canvas.width - 10 || kissX + kdx < 10) kdx = -kdx;
     if (kissY + kdy < 10) kdy = -kdy;
     else if (kissY + kdy > canvas.height - 60) {
         if (kissX > storyPaddleX && kissX < storyPaddleX + storyPaddleWidth) {
-            kdy = -kdy;
-            // при каждом отскоке случайный угол
+            // Отскок от платформы
+            kdy = -Math.abs(kdy);
             kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6;
             kdx = kSpeed * Math.cos(kAngle);
             kdy = -Math.abs(kSpeed * Math.sin(kAngle));
-            storyHitCount++;
+
+            if (storyDodgeCount < 3) {
+                storyDodgeCount++;
+                // Смайлик увернулся
+                storyTargetX = Math.random() * (canvas.width - 40) + 20;
+            } else {
+                // Попадание после 3 уклонений
+                storyDodgeCount = 4; // чтобы не увеличивать больше
+                showPopup("Первый шаг — сделан", [
+                    {text:"Продолжить", action:startStoryLevel1, color:"#4CAF50"},
+                    {text:"В главное меню", action:()=>gameState="menu", color:"#f44336"}
+                ]);
+            }
         } else {
             // Поцелуй упал — сброс позиции
             kissX = canvas.width / 2;
@@ -263,6 +291,8 @@ function drawStoryLevel1() {
 
     kissX += kdx;
     kissY += kdy;
+}
+
 
     // --- Уворот смайлика ---
     if (Math.abs(kissX - storyTargetX) < 40) {
@@ -378,5 +408,6 @@ function draw(){
 }
 
 draw();
+
 
 
