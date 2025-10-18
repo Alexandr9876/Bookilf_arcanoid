@@ -32,6 +32,10 @@ function resizeCanvas() {
     canvas.style.top = "50%";
     canvas.style.transform = "translate(-50%, -50%)";
 
+    brickWidth = (canvas.width - 40) / brickColumnCount;
+    brickHeight = 25;
+
+
     // Обновляем размеры игровых объектов
     paddleWidth = canvas.width * 0.25;
     paddleX = (canvas.width - paddleWidth) / 2;
@@ -83,8 +87,8 @@ const brickColumnCount = 6;
 const brickPadding = 5;
 const brickOffsetTop = 40;
 const brickOffsetLeft = 20;
-const brickWidth = (canvas.width - 40) / brickColumnCount;
-const brickHeight = 25;
+let brickWidth = (canvas.width - 40) / brickColumnCount;
+let brickHeight = 25;
 let bricks = [];
 
 function createBricks() {
@@ -109,8 +113,8 @@ function createBricks() {
 let storyHitCount = 0;
 let storyTargetX = canvas.width / 2;
 let storyTargetY = 100;
-let storyPaddleX = canvas.width / 2 - 25;
 const storyPaddleWidth = 50;
+let storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
 let storyHitRegistered = false;
 
 // --- Поп-ап ---
@@ -134,8 +138,7 @@ function startStoryLevel1() {
     storyTargetX = canvas.width / 2;
     storyHitRegistered = false;
     storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
-    storyDodgeCount = 0;
-
+    dodgeCount = 0;
     kissX = canvas.width / 2;
     kissY = canvas.height - 60;
 
@@ -457,14 +460,3 @@ function draw(){
 }
 
 draw();
-
-
-
-
-
-
-
-
-
-
-
