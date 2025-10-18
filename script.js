@@ -289,23 +289,24 @@ function drawStoryLevel1() {
         }
     }
 
-    kissX += kdx;
+       kissX += kdx;
     kissY += kdy;
-}
-
 
     // --- Уворот смайлика ---
-    if (Math.abs(kissX - storyTargetX) < 40) {
+    if (Math.abs(kissX - storyTargetX) < 40 && storyDodgeCount < 3) {
         storyTargetX = Math.random() * (canvas.width - 40) + 20;
     }
 
     // --- Проверка завершения уровня ---
-    if (storyHitCount >= 5) {
+    if (storyDodgeCount >= 4 && !storyHitRegistered) {
+        storyHitRegistered = true;
         showPopup("Первый шаг — сделан", [
             {text:"Продолжить", action:startStoryLevel1, color:"#4CAF50"},
             {text:"В главное меню", action:()=>gameState="menu", color:"#f44336"}
         ]);
     }
+}
+
 }
 
 // --- Обработчик касаний и кликов ---
@@ -408,6 +409,7 @@ function draw(){
 }
 
 draw();
+
 
 
 
