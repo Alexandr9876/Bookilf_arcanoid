@@ -297,6 +297,9 @@ let kdy = -9;
 let dodgeCount = 0;
 let targetDodging = false;
 
+// --- Параметры платформы ---
+const storyPaddleHeight = 20; // "физическая" высота платформы для столкновений
+
 function drawStoryLevel1() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -310,34 +313,43 @@ function drawStoryLevel1() {
     ctx.fillText("💋", kissX, kissY);
 
     // --- Грустный/смущённый смайлик ---
-    ctx.font = "56px 'Segoe UI Emoji', Arial"; // крупнее в 2 раза
+    ctx.font = "56px 'Segoe UI Emoji', Arial";
     ctx.fillText(dodgeCount < 3 ? "👧" : "💖", storyTargetX, storyTargetY);
 
     // --- Движение поцелуя ---
-    if (kissX + kdx > canvas.width - 10 || kissX + kdx < 10) kdx = -kdx;
-    if (kissY + kdy < 10) kdy = -kdy;
-    else if (kissY + kdy > canvas.height - 60) {
-        if (kissX > storyPaddleX && kissX < storyPaddleX + storyPaddleWidth) {
-            kdy = -kdy;
-        } else {
-            // поцелуй упал
-            showPopup("Подкат провален 💔", [
-                {text:"Еще раз", action:startStoryLevel1, color:"#4CAF50"},
-                {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
-            ]);
-            return;
-        }
-    }
-
     kissX += kdx;
     kissY += kdy;
 
-    // --- Проверяем, летит ли поцелуй прямо в грустного ---
+    // Столкновение с боковыми стенками
+    if (kissX + kdx > canvas.width - 10 || kissX + kdx < 10) kdx = -kdx;
+
+    // Столкновение с верхней стенкой
+    if (kissY + kdy < 10) kdy = -kdy;
+
+    // Столкновение с платформой (прямоугольник)
+    const paddleTop = canvas.height - 30 - storyPaddleHeight; // верх платформы
+    const paddleBottom = canvas.height - 30;                   // низ платформы
+    const paddleLeft = storyPaddleX;
+    const paddleRight = storyPaddleX + storyPaddleWidth;
+
+    if (kissY + kdy > paddleTop && kissY + kdy < paddleBottom &&
+        kissX > paddleLeft && kissX < paddleRight) {
+        kdy = -kdy;
+    }
+    // Если поцелуй упал ниже платформы
+    else if (kissY + kdy > canvas.height) {
+        showPopup("Подкат провален 💔", [
+            {text:"Еще раз", action:startStoryLevel1, color:"#4CAF50"},
+            {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
+        ]);
+        return;
+    }
+
+    // --- Проверка цели (девочка) ---
     const dxToTarget = storyTargetX - kissX;
     const dyToTarget = storyTargetY - kissY;
     const distance = Math.sqrt(dxToTarget*dxToTarget + dyToTarget*dyToTarget);
 
-    // если поцелуй близко летит к цели — увернуться
     if (distance < 60 && dodgeCount < 3 && !targetDodging) {
         storyTargetX = Math.random() * (canvas.width - 80) + 40;
         storyTargetY = Math.random() * (canvas.height / 2 - 80) + 40;
@@ -347,17 +359,18 @@ function drawStoryLevel1() {
     }
 
     if (distance < 50 && dodgeCount >= 3 && !storyHitRegistered) {
-    storyHitRegistered = true; // чтобы попап не вызывался каждый кадр
-    // даём один кадр на отрисовку ❤️
-    requestAnimationFrame(() => {
-        setTimeout(() => {
-            showPopup("Первый шаг — сделан 💞", [
-                {text:"Продолжить", action:startStoryLevel1, color:"#4CAF50"},
-                {text:"В меню", action:()=>gameState="menu", color:"#f44336"}
-            ]);
-        }, 50); // 50ms 
-    });
+        storyHitRegistered = true;
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                showPopup("Первый шаг — сделан 💞", [
+                    {text:"Продолжить", action:startStoryLevel1, color:"#4CAF50"},
+                    {text:"В меню", action:()=>gameState="menu", color:"#f44336"}
+                ]);
+            }, 50);
+        });
+    }
 }
+
 
 
 
@@ -444,6 +457,7 @@ function draw(){
 }
 
 draw();
+
 
 
 
