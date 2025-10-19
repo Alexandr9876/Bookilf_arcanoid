@@ -11,22 +11,10 @@ let gameState = "menu";
 let maleX = 50, maleY = 0, maleDx = 2;
 let femaleX = 150, femaleY = 0, femaleDx = -2;
 
-// --- Размеры игрового поля ---
-let fieldWidth, fieldHeight;
-
 // --- Resize ---
 function resizeCanvas() {
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-
-    fieldHeight = screenHeight;
-    fieldWidth = Math.min(screenWidth, fieldHeight * 9 / 16);
-
-    canvas.width = fieldWidth;
-    canvas.height = fieldHeight;
-
-    // Смещения для рисования по центру экрана
-    canvas.dataset.offsetX = (screenWidth - fieldWidth) / 2;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
     maleY = canvas.height - 50;
     femaleY = canvas.height - 50;
@@ -54,13 +42,13 @@ function drawMenu() {
     ctx.font = "48px 'Segoe UI Emoji', Arial";
     ctx.textAlign = "center";
     ctx.fillStyle = "#fff";
-    ctx.fillText("🍑 Бананоид 🍌", canvas.width / 2, 100);
+    ctx.fillText("🍑 Бананоид 🍌", canvas.width / 2, canvas.height * 0.15);
 
     // Кнопки
-    drawButton("Играть", canvas.width / 2 - 70, 200, 140, 50, "#4CAF50");
-    drawButton("Сюжет", canvas.width / 2 - 70, 270, 140, 50, "#f44336");
+    drawButton("Играть", canvas.width / 2 - 70, canvas.height * 0.35, 140, 50, "#4CAF50");
+    drawButton("Сюжет", canvas.width / 2 - 70, canvas.height * 0.45, 140, 50, "#f44336");
 
-    // Движущиеся смайлики
+    // Движущиеся смайлики внизу
     ctx.font = "48px 'Segoe UI Emoji', Arial";
     ctx.fillText("👨", maleX, maleY);
     ctx.fillText("👩", femaleX, femaleY);
@@ -74,13 +62,14 @@ function drawMenu() {
 
 // --- Клик по меню ---
 canvas.addEventListener("click", e => {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = e.clientX;
+    const y = e.clientY;
 
     if (x >= canvas.width / 2 - 70 && x <= canvas.width / 2 + 70) {
-        if (y >= 200 && y <= 250) alert("Запускаем режим Арканоид!");
-        if (y >= 270 && y <= 320) alert("Запускаем режим Сюжет!");
+        if (y >= canvas.height * 0.35 && y <= canvas.height * 0.35 + 50)
+            alert("Запускаем режим Арканоид!");
+        if (y >= canvas.height * 0.45 && y <= canvas.height * 0.45 + 50)
+            alert("Запускаем режим Сюжет!");
     }
 });
 
