@@ -261,14 +261,17 @@ function drawPlay() {
     ctx.fillText(ballEmoji, ball.x, ball.y);
 
     // платформа
+    ctx.textBaseline = "bottom";
     ctx.font = `${paddle.height*3}px 'Segoe UI Emoji', Arial`;
     ctx.fillText(paddleEmoji, paddle.x, paddle.y);
+    ctx.textBaseline = "top"; // вернуть обратно для остальных элементов
+
 
     // счетчик и жизни
     ctx.font = "24px Arial";
     ctx.fillStyle = "#fff";
-    ctx.fillText(`Блоки уничтожено: ${playScore}`, 20, 40);
-    ctx.fillText(`Жизни: ${playLives}`, 20, 70);
+    ctx.fillText(`Обананено персичков: ${playScore}`, 20, 40);
+    ctx.fillText(`Таблеток Виагра: ${playLives}`, 20, 70);
 
     // движение шарика
     ball.x += ball.dx;
@@ -453,4 +456,5 @@ function draw() {
 
 // --- Запуск ---
 draw();
+
 
