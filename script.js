@@ -51,12 +51,15 @@ function drawButtonBra(x, y, w, h, color, text) {
     ctx.strokeStyle = color;
     ctx.stroke();
 
-    // Текст по центру чашек
-    ctx.fillStyle = "#fff";
+    // Текст с обводкой
     ctx.font = `${Math.floor(h/4)}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(text, x + w/2, y + h*0.75);
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 3;
+    ctx.strokeText(text, x + w/2, y + h*0.65);
+    ctx.fillStyle = "#fff";
+    ctx.fillText(text, x + w/2, y + h*0.65);
 }
 
 // --- Стринги ---
@@ -65,25 +68,28 @@ function drawButtonStringPanties(x, y, w, h, color, text) {
 
     // Основной треугольник
     ctx.beginPath();
-    ctx.moveTo(x + w*0.2, y);          // левый верх
+    ctx.moveTo(x + w*0.35, y);          // левый верх
     ctx.lineTo(x + w*0.5, y + h);      // низ
-    ctx.lineTo(x + w*0.8, y);          // правый верх
+    ctx.lineTo(x + w*0.65, y);         // правый верх
     ctx.closePath();
     ctx.fill();
 
-    // Резинка сверху (тонкая линия)
+    // Тонкая резинка сверху
     ctx.strokeStyle = color;
-    ctx.lineWidth = h*0.1;
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(x + w*0.15, y);
-    ctx.lineTo(x + w*0.85, y);
+    ctx.moveTo(x + w*0.35, y);
+    ctx.lineTo(x + w*0.65, y);
     ctx.stroke();
 
-    // Текст на резинке
-    ctx.fillStyle = "#fff";
+    // Текст на резинке с обводкой
     ctx.font = `${Math.floor(h/5)}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.strokeText(text, x + w/2, y + h*0.05);
+    ctx.fillStyle = "#fff";
     ctx.fillText(text, x + w/2, y + h*0.05);
 }
 
@@ -100,7 +106,7 @@ function drawMenu() {
 
     // Кнопки
     drawButtonBra(canvas.width/2 - 100, canvas.height*0.3, 200, 100, "#4CAF50", "Играть");
-    drawButtonStringPanties(canvas.width/2 - 100, canvas.height*0.45, 200, 80, "#f44336", "Сюжет");
+    drawButtonStringPanties(canvas.width/2 - 100, canvas.height*0.45, 200, 60, "#f44336", "Сюжет");
 
     // Смайлики внизу
     ctx.font = "48px 'Segoe UI Emoji', Arial";
@@ -126,7 +132,7 @@ canvas.addEventListener("click", e => {
 
     // Сюжет (стринги)
     if (x >= canvas.width/2 - 100 && x <= canvas.width/2 + 100 &&
-        y >= canvas.height*0.45 && y <= canvas.height*0.45 + 80)
+        y >= canvas.height*0.45 && y <= canvas.height*0.45 + 60)
         alert("Запускаем режим Сюжет!");
 });
 
