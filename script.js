@@ -1,3 +1,5 @@
+Так?
+Проверь:
 // --- Настройка Canvas ---
 const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
@@ -48,21 +50,20 @@ function resizeCanvas() {
     createBricks();
 }
 
-
 // Перерисовываем при загрузке и изменении ориентации
 window.addEventListener("load", resizeCanvas);
 window.addEventListener("resize", resizeCanvas);
 window.addEventListener("orientationchange", resizeCanvas);
 
 
-/ --- Летающие смайлики в меню ---
-let maleX = 50, maleY = canvas.height - 40, maleDx = 2;
-let femaleX = 250, femaleY = canvas.height - 40, femaleDx = -2;
+// --- Летающие смайлики в меню ---
+let maleX = 50, maleY = canvas.height - 50, maleDx = 2;
+let femaleX = 250, femaleY = canvas.height - 50, femaleDx = -2;
 
-// --- Вертикально движущиеся символы пола ---
-let maleSymbolY = canvas.height - 40;
-let femaleSymbolY = canvas.height - 40;
-let maleSymbolDy = 1.2;   // движение вверх-вниз
+// --- Вертикально летающие символы пола ---
+let maleSymbolY = canvas.height - 100;
+let femaleSymbolY = canvas.height - 150;
+let maleSymbolDy = 1.2;
 let femaleSymbolDy = 1.5;
 
 // --- Платформа ---
@@ -137,7 +138,7 @@ function startStoryLevel1() {
     kissX = canvas.width / 2;
     kissY = canvas.height - 60;
 
-    // скорость поцелуя
+    // ✅ добавляем скорость поцелуя (3 раза быстрее обычного шара)
     const kSpeed = 9;
     const kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6;
     kdx = kSpeed * Math.cos(kAngle);
@@ -156,10 +157,9 @@ function drawBall() {
 }
 
 function drawPaddle() {
-    ctx.font = "108px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif"; // в 3 раза больше
+   ctx.font = "36px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
     ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic"; // нижняя точка текста
-    ctx.fillText("🍆", paddleX + paddleWidth / 2, canvas.height - 10); 
+    ctx.fillText("🍆", paddleX + paddleWidth / 2, canvas.height - 30);
 }
 
 function drawBricks() {
@@ -276,8 +276,8 @@ function drawMenu() {
     maleSymbolY += maleSymbolDy;
     femaleSymbolY += femaleSymbolDy;
 
-if (maleSymbolY < canvas.height - 140 || maleSymbolY > canvas.height - 40) maleSymbolDy = -maleSymbolDy;
-if (femaleSymbolY < canvas.height - 160 || femaleSymbolY > canvas.height - 40) femaleSymbolDy = -femaleSymbolDy;
+    if (maleSymbolY > canvas.height - 40 || maleSymbolY < canvas.height - 120) maleSymbolDy = -maleSymbolDy;
+    if (femaleSymbolY > canvas.height - 60 || femaleSymbolY < canvas.height - 140) femaleSymbolDy = -femaleSymbolDy;
 
 }
 
@@ -459,7 +459,3 @@ function draw(){
 }
 
 draw();
-
-
-
-
