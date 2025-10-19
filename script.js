@@ -43,7 +43,7 @@ function drawButtonBra(x, y, w, h, color, text) {
     ctx.bezierCurveTo(x + w*0.75, y + h*0.9, x + w, y + h*0.4, x + w*0.8, y + h*0.4);
     ctx.fill();
 
-    // Мостик сверху
+    // Мостик
     ctx.beginPath();
     ctx.moveTo(x + w*0.45, y + h*0.4);
     ctx.lineTo(x + w*0.55, y + h*0.4);
@@ -62,11 +62,11 @@ function drawButtonBra(x, y, w, h, color, text) {
 
     // Текст по центру чашек
     ctx.fillStyle = "#fff";
-    const fontSize = Math.floor(h / 3); // крупный одинаковый размер
+    const fontSize = Math.floor(h / 2.5); // крупный одинаковый размер
     ctx.font = `${fontSize}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(text, x + w/2, y + h*0.75);
+    ctx.fillText(text, x + w/2, y + h*0.65);
 }
 
 // --- Стринги ---
@@ -89,13 +89,13 @@ function drawButtonStringPanties(x, y, w, h, color, text) {
     ctx.lineTo(x + w*0.85, y);
     ctx.stroke();
 
-    // Текст на резинке
+    // Текст на трусиках, ниже треугольника
     ctx.fillStyle = "#fff";
-    const fontSize = Math.floor(h / 3); // одинаковый размер текста
+    const fontSize = Math.floor(h / 2.5); // одинаковый размер текста
     ctx.font = `${fontSize}px Arial`;
     ctx.textAlign = "center";
-    ctx.textBaseline = "bottom";
-    ctx.fillText(text, x + w/2, y + h*0.05);
+    ctx.textBaseline = "top";
+    ctx.fillText(text, x + w/2, y + h + 5); // 5px ниже треугольника
 }
 
 // --- Меню ---
