@@ -46,6 +46,9 @@ let ball = { x: 0, y: 0, dx: 4, dy: -4, size: 30 };
 let paddle = { x: 0, y: 0, width: 90, height: 30 };
 
 let showGameOverPopup = false;
+let showWinPopup = false;
+let showLoseLifePopup = false;
+
 
 
 
@@ -252,9 +255,15 @@ function drawPlay() {
 
     // блоки
     ctx.font = `${blocks[0]?.size || 40}px 'Segoe UI Emoji', Arial`;
-    blocks.forEach(block => {
-        if (!block.destroyed) ctx.fillText(blockEmoji, block.x, block.y);
-    });
+   
+      blocks.forEach(block => {
+    if(!block.destroyed) ctx.fillText(blockEmoji, block.x, block.y);
+});
+// проверка победы
+if (blocks.every(block => block.destroyed)) {
+    showWinPopup = true;
+}
+
 
     // шарик
     ctx.font = `${ball.size}px 'Segoe UI Emoji', Arial`;
@@ -301,15 +310,24 @@ function drawPlay() {
         }
     });
 
-    // проверка падения шарика
-    if(ball.y > canvas.height) {
-        playLives--;
-        resetBallPaddle();
-        if(playLives <= 0) showGameOverPopup = true;
+    
+   // проверка падения шарика
+if(ball.y > canvas.height) {
+    if (playLives > 1) {
+        showLoseLifePopup = true; // показываем "Скушать таблетку"
+    } else {
+        showGameOverPopup = true;
     }
+}
 
-    // Попап при поражении
-    if(showGameOverPopup) drawGameOverPopup();
+
+
+    // Попап при
+  if (showWinPopup) drawWinPopup();
+else if (showLoseLifePopup) drawLoseLifePopup();
+else if (showGameOverPopup) drawGameOverPopup();
+
+
 }
 function resetBallPaddle() {
     ball.x = canvas.width/2;
@@ -348,10 +366,103 @@ function drawGameOverPopup() {
     ctx.fillText("Выйти", x + 170 + 45, y + 120);
 }
 
+function drawWinPopup() {
+    const w = 300, h = 180;
+    const x = canvas.width/2 - w/2;
+    const y = canvas.height/2 - h/2;
+
+    ctx.fillStyle = "rgba(0,0,0,0.8)";
+    ctx.fillRect(x, y, w, h);
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "20px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Ты Гигант! 💪", canvas.width/2, y + 50);
+
+    // кнопки
+    ctx.fillStyle = "#4CAF50";
+    ctx.fillRect(x + 40, y + 100, 90, 40);
+    ctx.fillStyle = "#fff";
+    ctx.fillText("Еще раз", x + 40 + 45, y + 120);
+
+    ctx.fillStyle = "#f44336";
+    ctx.fillRect(x + 170, y + 100, 90, 40);
+    ctx.fillStyle = "#fff";
+    ctx.fillText("Выйти", x + 170 + 45, y + 120);
+}
+
+function drawLoseLifePopup() {
+    const w = 300, h = 180;
+    const x = canvas.width/2 - w/2;
+    const y = canvas.height/2 - h/2;
+
+    ctx.fillStyle = "rgba(0,0,0,0.8)";
+    ctx.fillRect(x, y, w, h);
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "20px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Скушать таблетку 💊", canvas.width/2, y + 50);
+
+    // кнопки
+    ctx.fillStyle = "#4CAF50";
+    ctx.fillRect(x + 40, y + 100, 90, 40);
+    ctx.fillStyle = "#fff";
+    ctx.fillText("Принять", x + 40 + 45, y + 120);
+
+    ctx.fillStyle = "#f44336";
+    ctx.fillRect(x + 170, y + 100, 90, 40);
+    ctx.fillStyle = "#fff";
+    ctx.fillText("Выйти", x + 170 + 45, y + 120);
+}
+
 // --- Клики по меню ---
 canvas.addEventListener("click", e => {
     const x = e.clientX;
     const y = e.clientY;
+// Попап победы
+if (gameState === "play" && showWinPopup) {
+    const px = canvas.width/2 - 150;
+    const py = canvas.height/2 - 90;
+
+    // Еще раз
+    if(x >= px + 40 && x <= px + 130 && y >= py + 100 && y <= py + 140) {
+        showWinPopup = false;
+        playLives = 3;
+        playScore = 0;
+        generateBlocks();
+        resetBallPaddle();
+        return;
+    }
+
+    // Выйти
+    if(x >= px + 170 && x <= px + 260 && y >= py + 100 && y <= py + 140) {
+        showWinPopup = false;
+        gameState = "menu";
+        return;
+    }
+}
+
+// Попап потеря жизни
+if (gameState === "play" && showLoseLifePopup) {
+    const px = canvas.width/2 - 150;
+    const py = canvas.height/2 - 90;
+
+    // Принять
+    if(x >= px + 40 && x <= px + 130 && y >= py + 100 && y <= py + 140) {
+        showLoseLifePopup = false;
+        playLives--; // минус жизнь
+        resetBallPaddle();
+        return;
+    }
+
+    // Выйти
+    if(x >= px + 170 && x <= px + 260 && y >= py + 100 && y <= py + 140) {
+        showLoseLifePopup = false;
+        gameState = "menu";
+        return;
+    }
+}
 
     // Попап Game Over
     if(gameState === "play" && showGameOverPopup) {
@@ -456,5 +567,6 @@ function draw() {
 
 // --- Запуск ---
 draw();
+
 
 
