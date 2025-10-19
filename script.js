@@ -27,6 +27,9 @@ function resizeCanvas() {
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
+// --- Универсальный размер текста ---
+const buttonTextSize = 40; // одинаковый для обеих кнопок
+
 // --- Бюстгальтер реалистичный ---
 function drawButtonBra(x, y, w, h, color, text) {
     ctx.fillStyle = color;
@@ -52,8 +55,7 @@ function drawButtonBra(x, y, w, h, color, text) {
     ctx.stroke();
 
     // Текст по центру чашек с обводкой
-    const fontSize = Math.floor(h / 3);
-    ctx.font = `${fontSize}px Arial`;
+    ctx.font = `${buttonTextSize}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.strokeStyle = "#000";
@@ -75,17 +77,16 @@ function drawButtonStringPanties(x, y, w, h, color, text) {
     ctx.closePath();
     ctx.fill();
 
-    // Тонкая резинка сверху
+    // Резинка сверху (заметная)
     ctx.strokeStyle = color;
-    ctx.lineWidth = h*0.08;
+    ctx.lineWidth = h*0.15;
     ctx.beginPath();
     ctx.moveTo(x + w*0.4, y);
     ctx.lineTo(x + w*0.6, y);
     ctx.stroke();
 
     // Текст на резинке с обводкой
-    const fontSize = Math.floor(h / 3);
-    ctx.font = `${fontSize}px Arial`;
+    ctx.font = `${buttonTextSize}px Arial`; // одинаковый размер с бюстгальтером
     ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
     ctx.strokeStyle = "#000";
