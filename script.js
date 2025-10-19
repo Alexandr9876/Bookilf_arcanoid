@@ -1,141 +1,150 @@
-// script.js
+// --- Canvas ---
+const canvas = document.createElement("canvas");
+const ctx = canvas.getContext("2d");
 
-window.addEventListener('load', () => {
-    const menuContainer = document.createElement('div');
-    menuContainer.id = 'main-menu';
-    document.body.appendChild(menuContainer);
+// Стили, чтобы canvas занимал весь экран и был зафиксирован
+canvas.style.position = "fixed";
+canvas.style.top = 0;
+canvas.style.left = 0;
+canvas.style.width = "100%";
+canvas.style.height = "100%";
+canvas.style.display = "block";
+document.body.style.margin = 0;
+document.body.style.padding = 0;
+document.body.style.overflow = "hidden";
 
-    Object.assign(menuContainer.style, {
-        position: 'fixed',
-        top: '0',
-        left: '0',
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#fff',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        fontFamily: 'Arial, sans-serif',
-        zIndex: '1000',
+document.body.appendChild(canvas);
+
+// --- Переменные ---
+let gameState = "menu";
+
+// Смайлики внизу
+let maleX = 50, maleY = 0, maleDx = 2;
+let femaleX = 150, femaleY = 0, femaleDx = -2;
+
+// Новые смайлики "кружки" для анимации
+let floatingCircles = [];
+for (let i = 0; i < 10; i++) {
+    floatingCircles.push({
+        x: Math.random() * window.innerWidth,
+        y: window.innerHeight + Math.random() * 200,
+        size: 30 + Math.random() * 20,
+        speed: 1 + Math.random() * 2,
+        type: Math.random() < 0.5 ? "male" : "female" // тип кружка
     });
+}
 
-    // Фон из смайликов кроватей
-    const background = document.createElement('div');
-    background.id = 'menu-background';
-    menuContainer.appendChild(background);
+// --- Resize ---
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    Object.assign(background.style, {
-        position: 'absolute',
-        top: '0',
-        left: '0',
-        width: '100%',
-        height: '100%',
-        fontSize: '30px',
-        display: 'flex',
-        flexWrap: 'wrap',
-        overflow: 'hidden',
-        pointerEvents: 'none',
-    });
+    maleY = canvas.height - 50;
+    femaleY = canvas.height - 50;
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
 
-    const bedEmoji = '🛏️';
-    const cols = Math.ceil(window.innerWidth / 40);
-    const rows = Math.ceil(window.innerHeight / 40);
-    for (let i = 0; i < rows * cols; i++) {
-        const span = document.createElement('span');
-        span.textContent = bedEmoji;
-        background.appendChild(span);
+// --- Кнопки ---
+function drawButton(text, x, y, w, h, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = "#fff";
+    ctx.font = `${Math.floor(h/2)}px Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x + w / 2, y + h / 2);
+}
+
+// --- Главный меню ---
+function drawMenu() {
+    // Фон тематический
+    ctx.fillStyle = "#ffefc1"; // светлый персиковый фон
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Анимированные "кровати" на фоне
+    ctx.font = "40px 'Segoe UI Emoji', Arial";
+    for (let y = 50; y < canvas.height; y += 100) {
+        for (let x = 50; x < canvas.width; x += 100) {
+            ctx.fillText("🛏️", x, y);
+        }
     }
 
-    // Заголовок
-    const title = document.createElement('h1');
-    title.innerHTML = '🍑 Бананоид 🍌';
-    Object.assign(title.style, {
-        fontSize: '48px',
-        margin: '20px',
-        zIndex: '10',
-        textAlign: 'center',
-    });
-    menuContainer.appendChild(title);
-
-    // Движущиеся смайлики внизу
-    const footer = document.createElement('div');
-    Object.assign(footer.style, {
-        position: 'absolute',
-        bottom: '10px',
-        width: '100%',
-        display: 'flex',
-        justifyContent: 'space-between',
-        padding: '0 20px',
-        fontSize: '36px',
-        zIndex: '10',
-    });
-    const male = document.createElement('span');
-    male.textContent = '👨';
-    const female = document.createElement('span');
-    female.textContent = '👩';
-    footer.appendChild(male);
-    footer.appendChild(female);
-    menuContainer.appendChild(footer);
-
-    // Анимация смайликов
-    let maleDirection = 1; // 1 — вправо, -1 — влево
-    let femaleDirection = -1;
-
-    function animateFooter() {
-        const maleLeft = male.offsetLeft + maleDirection * 1; // скорость 1px
-        const femaleLeft = female.offsetLeft + femaleDirection * 1;
-
-        if (maleLeft <= 0 || maleLeft + male.offsetWidth >= window.innerWidth) maleDirection *= -1;
-        if (femaleLeft <= 0 || femaleLeft + female.offsetWidth >= window.innerWidth) femaleDirection *= -1;
-
-        male.style.left = maleLeft + 'px';
-        female.style.left = femaleLeft + 'px';
-
-        requestAnimationFrame(animateFooter);
-    }
-
-    male.style.position = 'relative';
-    female.style.position = 'relative';
-    animateFooter();
+    // Заголовок с эмодзи
+    ctx.font = "48px 'Segoe UI Emoji', Arial";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#000";
+    ctx.fillText("🍑 Бананоид 🍌", canvas.width / 2, canvas.height * 0.15);
 
     // Кнопки
-    const buttonsContainer = document.createElement('div');
-    Object.assign(buttonsContainer.style, {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px',
-        zIndex: '10',
-        marginTop: '40px',
+    drawButton("Играть", canvas.width / 2 - 70, canvas.height * 0.35, 140, 50, "#4CAF50");
+    drawButton("Сюжет", canvas.width / 2 - 70, canvas.height * 0.45, 140, 50, "#f44336");
+
+    // Движущиеся смайлики внизу
+    ctx.font = "48px 'Segoe UI Emoji', Arial";
+    ctx.fillStyle = "#000";
+    ctx.fillText("👨", maleX, maleY);
+    ctx.fillText("👩", femaleX, femaleY);
+
+    maleX += maleDx;
+    if (maleX < 20 || maleX > canvas.width - 20) maleDx = -maleDx;
+
+    femaleX += femaleDx;
+    if (femaleX < 20 || femaleX > canvas.width - 20) femaleDx = -femaleDx;
+
+    // Анимация новых кружков
+    floatingCircles.forEach(circle => {
+        // Тень
+        ctx.shadowColor = "rgba(0,0,0,0.3)";
+        ctx.shadowBlur = 5;
+
+        ctx.fillStyle = circle.type === "male" ? "#1E90FF" : "#FF69B4";
+        ctx.beginPath();
+        ctx.arc(circle.x, circle.y, circle.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Символ внутри кружка
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#fff";
+        ctx.font = `${circle.size / 1.5}px Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(circle.type === "male" ? "♂" : "♀", circle.x, circle.y);
+
+        // Движение
+        circle.y -= circle.speed;
+        if (circle.y + circle.size / 2 < canvas.height / 2 && Math.random() < 0.01) {
+            circle.speed = -circle.speed; // меняем направление вниз
+        }
+        if (circle.y - circle.size / 2 > canvas.height) {
+            circle.y = canvas.height + Math.random() * 200;
+            circle.x = Math.random() * canvas.width;
+            circle.speed = 1 + Math.random() * 2;
+        }
     });
-    menuContainer.appendChild(buttonsContainer);
+}
 
-    const playButton = document.createElement('button');
-    playButton.textContent = 'Играть';
-    const storyButton = document.createElement('button');
-    storyButton.textContent = 'Сюжет';
+// --- Клик по меню ---
+canvas.addEventListener("click", e => {
+    const x = e.clientX;
+    const y = e.clientY;
 
-    [playButton, storyButton].forEach(btn => {
-        Object.assign(btn.style, {
-            padding: '15px 40px',
-            fontSize: '24px',
-            cursor: 'pointer',
-            borderRadius: '10px',
-            border: '2px solid #000',
-            backgroundColor: '#ffeb3b',
-        });
-        buttonsContainer.appendChild(btn);
-    });
-
-    // Заглушки для будущих режимов
-    playButton.addEventListener('click', () => startGameMode('play'));
-    storyButton.addEventListener('click', () => startGameMode('story'));
-
-    // Функция для будущих уровней и арканоида
-    function startGameMode(mode) {
-        menuContainer.style.display = 'none'; // скрываем меню
-        console.log(`Запуск режима: ${mode}`);
-        // Здесь позже добавим логику арканоида и сюжета
+    if (x >= canvas.width / 2 - 70 && x <= canvas.width / 2 + 70) {
+        if (y >= canvas.height * 0.35 && y <= canvas.height * 0.35 + 50)
+            alert("Запускаем режим Арканоид!");
+        if (y >= canvas.height * 0.45 && y <= canvas.height * 0.45 + 50)
+            alert("Запускаем режим Сюжет!");
     }
 });
+
+// --- Главный цикл ---
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (gameState === "menu") drawMenu();
+
+    requestAnimationFrame(draw);
+}
+
+// --- Запуск ---
+draw();
