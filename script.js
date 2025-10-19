@@ -277,10 +277,11 @@ if (blocks.every(block => block.destroyed)) {
 
 
     // счетчик и жизни
-    ctx.font = "24px Arial";
-    ctx.fillStyle = "#fff";
-    ctx.fillText(`Обананено персичков: ${playScore}`, 20, 40);
-    ctx.fillText(`Таблеток Виагра: ${playLives}`, 20, 70);
+ctx.font = "24px Arial";
+ctx.fillStyle = "#000000"; // черный цвет
+ctx.fillText(`Обананено персичков: ${playScore}`, 20, 40);
+ctx.fillText(`Таблеток Виагра: ${playLives}`, 20, 70);
+
 
     // движение шарика
     ball.x += ball.dx;
@@ -567,6 +568,7 @@ function draw() {
 
 // --- Запуск ---
 draw();
+
 
 
 
