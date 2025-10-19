@@ -33,6 +33,21 @@ let maleX = 50, maleY = 0, maleDx = 2;
 let femaleX = 150, femaleY = 0, femaleDx = -2;
 let fadeOpacity = 0;
 let isTransitioning = false;
+// --- Режим Играть ---
+let playLives = 3;
+let playScore = 0;
+
+const blockEmoji = "🍑";
+const ballEmoji = "🍌";
+const paddleEmoji = "🍆";
+
+let blocks = [];
+let ball = { x: 0, y: 0, dx: 4, dy: -4, size: 30 };
+let paddle = { x: 0, y: 0, width: 90, height: 30 };
+
+let showGameOverPopup = false;
+
+
 
 // --- Фон кроватей ---
 const bedEmoji = "🛏️";
@@ -49,6 +64,26 @@ function generateBedGrid() {
             bedGrid.push({
                 x: x * emojiSize,
                 y: y * emojiSize
+            });
+        }
+    }
+}
+function generateBlocks() {
+    blocks = [];
+    const cols = 8;
+    const rows = 3;
+    const spacing = 10;
+    const blockSize = 40;
+    const startX = (canvas.width - (cols * blockSize + (cols-1)*spacing))/2;
+    const startY = 100;
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            blocks.push({
+                x: startX + c*(blockSize+spacing),
+                y: startY + r*(blockSize+spacing),
+                size: blockSize,
+                destroyed: false
             });
         }
     }
@@ -205,24 +240,162 @@ function drawStory() {
     ctx.textAlign = "center";
     ctx.fillText("Скоро (в разработке)", canvas.width/2, canvas.height/2);
 }
+function drawPlay() {
+    // фон
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, "#ff9eb5");
+    gradient.addColorStop(1, "#ffd6a5");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    drawBedBackground();
+
+    // блоки
+    ctx.font = `${blocks[0]?.size || 40}px 'Segoe UI Emoji', Arial`;
+    blocks.forEach(block => {
+        if (!block.destroyed) ctx.fillText(blockEmoji, block.x, block.y);
+    });
+
+    // шарик
+    ctx.font = `${ball.size}px 'Segoe UI Emoji', Arial`;
+    ctx.fillText(ballEmoji, ball.x, ball.y);
+
+    // платформа
+    ctx.font = `${paddle.height*3}px 'Segoe UI Emoji', Arial`;
+    ctx.fillText(paddleEmoji, paddle.x, paddle.y);
+
+    // счетчик и жизни
+    ctx.font = "24px Arial";
+    ctx.fillStyle = "#fff";
+    ctx.fillText(`Блоки уничтожено: ${playScore}`, 20, 40);
+    ctx.fillText(`Жизни: ${playLives}`, 20, 70);
+
+    // движение шарика
+    ball.x += ball.dx;
+    ball.y += ball.dy;
+
+    // проверка столкновений со стенками
+    if(ball.x < 0 || ball.x > canvas.width - ball.size) ball.dx = -ball.dx;
+    if(ball.y < 0) ball.dy = -ball.dy;
+
+    // проверка столкновения с платформой
+    if(ball.y + ball.size >= paddle.y &&
+       ball.x + ball.size >= paddle.x &&
+       ball.x <= paddle.x + paddle.width) {
+        ball.dy = -ball.dy;
+    }
+
+    // проверка попадания по блокам
+    blocks.forEach(block => {
+        if(!block.destroyed &&
+           ball.x + ball.size > block.x &&
+           ball.x < block.x + block.size &&
+           ball.y + ball.size > block.y &&
+           ball.y < block.y + block.size) {
+            block.destroyed = true;
+            ball.dy = -ball.dy;
+            playScore++;
+        }
+    });
+
+    // проверка падения шарика
+    if(ball.y > canvas.height) {
+        playLives--;
+        resetBallPaddle();
+        if(playLives <= 0) showGameOverPopup = true;
+    }
+
+    // Попап при поражении
+    if(showGameOverPopup) drawGameOverPopup();
+}
+function resetBallPaddle() {
+    ball.x = canvas.width/2;
+    ball.y = canvas.height/2;
+    ball.dx = 4;
+    ball.dy = -4;
+
+    paddle.width = 90;
+    paddle.height = 30;
+    paddle.x = canvas.width/2 - paddle.width/2;
+    paddle.y = canvas.height - 50;
+}
+
+function drawGameOverPopup() {
+    const w = 300, h = 180;
+    const x = canvas.width/2 - w/2;
+    const y = canvas.height/2 - h/2;
+
+    ctx.fillStyle = "rgba(0,0,0,0.8)";
+    ctx.fillRect(x, y, w, h);
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "20px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Ты сражался, как тигр 🐯", canvas.width/2, y + 50);
+
+    // кнопки
+    ctx.fillStyle = "#4CAF50";
+    ctx.fillRect(x + 40, y + 100, 90, 40);
+    ctx.fillStyle = "#fff";
+    ctx.fillText("Еще раз", x + 40 + 45, y + 120);
+
+    ctx.fillStyle = "#f44336";
+    ctx.fillRect(x + 170, y + 100, 90, 40);
+    ctx.fillStyle = "#fff";
+    ctx.fillText("Выйти", x + 170 + 45, y + 120);
+}
 
 // --- Клики по меню ---
 canvas.addEventListener("click", e => {
-    if (gameState !== "menu" || isTransitioning) return;
-
     const x = e.clientX;
     const y = e.clientY;
 
-    if (x >= canvas.width/2 - 120 && x <= canvas.width/2 + 120 &&
-        y >= canvas.height*0.3 && y <= canvas.height*0.3 + 120) {
-        startTransition("arcanoid");
+    // Попап Game Over
+    if(gameState === "play" && showGameOverPopup) {
+        const px = canvas.width/2 - 150;
+        const py = canvas.height/2 - 90;
+
+        // Еще раз
+        if(x >= px + 40 && x <= px + 130 && y >= py + 100 && y <= py + 140) {
+            showGameOverPopup = false;
+            playLives = 3;
+            playScore = 0;
+            generateBlocks();
+            resetBallPaddle();
+            return;
+        }
+
+        // Выйти
+        if(x >= px + 170 && x <= px + 260 && y >= py + 100 && y <= py + 140) {
+            gameState = "menu";
+            return;
+        }
     }
 
-    if (x >= canvas.width/2 - 100 && x <= canvas.width/2 + 100 &&
-        y >= canvas.height*0.5 && y <= canvas.height*0.5 + 80) {
-        startTransition("story");
+    // Меню
+    if(gameState === "menu" && !isTransitioning) {
+        if (x >= canvas.width/2 - 120 && x <= canvas.width/2 + 120 &&
+            y >= canvas.height*0.3 && y <= canvas.height*0.3 + 120) {
+            startTransition("arcanoid");
+        }
+        if (x >= canvas.width/2 - 100 && x <= canvas.width/2 + 100 &&
+            y >= canvas.height*0.5 && y <= canvas.height*0.5 + 80) {
+            startTransition("story");
+        }
     }
 });
+
+canvas.addEventListener("mousemove", e => {
+    if(gameState === "play" && !showGameOverPopup) {
+        paddle.x = e.clientX - paddle.width/2;
+    }
+});
+
+canvas.addEventListener("touchmove", e => {
+    if(gameState === "play" && !showGameOverPopup) {
+        paddle.x = e.touches[0].clientX - paddle.width/2;
+    }
+}, {passive:false});
 
 // --- Переход ---
 function startTransition(targetState) {
@@ -249,8 +422,13 @@ function startTransition(targetState) {
 
 // --- Запуск режимов ---
 function startArcanoid() {
-    gameState = "arcanoid";
+    gameState = "play";
+    playLives = 3;
+    playScore = 0;
+    generateBlocks();
+    resetBallPaddle();
 }
+
 function startStory() {
     gameState = "story";
 }
@@ -261,6 +439,7 @@ function draw() {
 
     if (gameState === "menu") drawMenu();
     if (gameState === "arcanoid") drawArcanoid();
+    if(gameState === "play") drawPlay();
     if (gameState === "story") drawStory();
 
     // затемнение при переходе
@@ -274,3 +453,4 @@ function draw() {
 
 // --- Запуск ---
 draw();
+
