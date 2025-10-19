@@ -1,18 +1,3 @@
-// --- Блокировка масштабирования на мобильных ---
-document.addEventListener('gesturestart', e => e.preventDefault());
-document.addEventListener('gesturechange', e => e.preventDefault());
-document.addEventListener('gestureend', e => e.preventDefault());
-
-document.addEventListener('wheel', e => {
-  if (e.ctrlKey) e.preventDefault(); // блокирует зум через ctrl + колесо
-}, { passive: false });
-
-document.addEventListener('touchmove', e => {
-  if (e.scale !== 1) e.preventDefault(); // блокирует pinch-zoom
-}, { passive: false });
-
-document.addEventListener('dblclick', e => e.preventDefault()); // блокирует двойной тап-зум
-
 // --- Canvas ---
 const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
@@ -36,8 +21,8 @@ function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    maleY = canvas.height - 60; // чуть выше нижнего края
-    femaleY = canvas.height - 60;
+    maleY = canvas.height - 50;
+    femaleY = canvas.height - 50;
 }
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
@@ -75,20 +60,12 @@ function drawButtonBra(x, y, w, h, color, text, textSize) {
     ctx.lineTo(x + w*0.75, y + h*0.15);
     ctx.stroke();
 
-    // Рамка вокруг текста
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x + w*0.1, y + h*0.55, w*0.8, h*0.2);
-
-    // Текст по центру чашек с обводкой
+    // Текст по центру чашек
+    ctx.fillStyle = "#fff";
     ctx.font = `${textSize}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = "#fff";
     ctx.fillText(text, x + w/2, y + h*0.65);
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = Math.floor(textSize/10);
-    ctx.strokeText(text, x + w/2, y + h*0.65);
 }
 
 // --- Стринги ---
@@ -111,20 +88,12 @@ function drawButtonStringPanties(x, y, w, h, color, text, textSize) {
     ctx.lineTo(x + w*0.85, y);
     ctx.stroke();
 
-    // Рамка вокруг текста
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x + w*0.1, y + h*0.25, w*0.8, h*0.5);
-
-    // Текст по центру трусиков с обводкой
+    // Текст по центру трусиков
+    ctx.fillStyle = "#fff";
     ctx.font = `${textSize}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = "#fff";
     ctx.fillText(text, x + w/2, y + h/2);
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = Math.floor(textSize/10);
-    ctx.strokeText(text, x + w/2, y + h/2);
 }
 
 // --- Меню ---
@@ -155,12 +124,10 @@ function drawMenu() {
     drawButtonBra(canvas.width/2 - 120, canvas.height*0.3, 240, 120, "#4CAF50", "Играть", buttonTextSize);
     drawButtonStringPanties(canvas.width/2 - 100, canvas.height*0.5, 200, 80, "#f44336", "Сюжет", buttonTextSize);
 
-    // Смайлики внизу, с поправкой чтобы не уходили за экран
-    const emojiSize = Math.floor(canvas.height * 0.08);
-    ctx.font = `${emojiSize}px 'Segoe UI Emoji', Arial`;
-    ctx.textBaseline = "alphabetic";
-    ctx.fillText("👨", Math.min(Math.max(maleX, 20), canvas.width - 20), canvas.height - 20);
-    ctx.fillText("👩", Math.min(Math.max(femaleX, 20), canvas.width - 20), canvas.height - 20);
+    // Смайлики внизу
+    ctx.font = "48px 'Segoe UI Emoji', Arial";
+    ctx.fillText("👨", maleX, maleY);
+    ctx.fillText("👩", femaleX, femaleY);
 
     maleX += maleDx;
     if (maleX < 20 || maleX > canvas.width - 20) maleDx = -maleDx;
