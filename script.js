@@ -9,7 +9,7 @@
     margin: 0;
     padding: 0;
     overflow: hidden;
-    touch-action: none; /* предотвращает масштабирование и скролл на тач-устройствах */
+    touch-action: none; /* блокирует жесты масштабирования и скролла */
   }
 </style>
 </head>
@@ -41,6 +41,36 @@ function resizeCanvas() {
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
+// --- Обводка текста ---
+function drawTextWithOutline(text, x, y, textSize) {
+    ctx.font = `${textSize}px Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // Подсчёт ширины текста для рамки
+    const textMetrics = ctx.measureText(text);
+    const textWidth = textMetrics.width;
+    const paddingX = 20;
+    const paddingY = 10;
+
+    // Рамка вокруг текста
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(
+        x - textWidth / 2 - paddingX / 2,
+        y - textSize / 2 - paddingY / 2,
+        textWidth + paddingX,
+        textSize + paddingY
+    );
+
+    // Сам текст
+    ctx.fillStyle = "#fff";
+    ctx.fillText(text, x, y);
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = Math.floor(textSize / 10);
+    ctx.strokeText(text, x, y);
+}
+
 // --- Бюстгальтер ---
 function drawButtonBra(x, y, w, h, color, text, textSize) {
     ctx.fillStyle = color;
@@ -70,19 +100,7 @@ function drawButtonBra(x, y, w, h, color, text, textSize) {
     ctx.lineTo(x + w*0.75, y + h*0.15);
     ctx.stroke();
 
-    // Рамка вокруг текста
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x + w*0.1, y + h*0.55, w*0.8, h*0.2);
-
-    ctx.font = `${textSize}px Arial`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#fff";
-    ctx.fillText(text, x + w/2, y + h*0.65);
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = Math.floor(textSize/10);
-    ctx.strokeText(text, x + w/2, y + h*0.65);
+    drawTextWithOutline(text, x + w/2, y + h*0.65, textSize);
 }
 
 // --- Стринги ---
@@ -103,18 +121,7 @@ function drawButtonStringPanties(x, y, w, h, color, text, textSize) {
     ctx.lineTo(x + w*0.85, y);
     ctx.stroke();
 
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x + w*0.1, y + h*0.25, w*0.8, h*0.5);
-
-    ctx.font = `${textSize}px Arial`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#fff";
-    ctx.fillText(text, x + w/2, y + h/2);
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = Math.floor(textSize/10);
-    ctx.strokeText(text, x + w/2, y + h/2);
+    drawTextWithOutline(text, x + w/2, y + h/2, textSize);
 }
 
 // --- Меню ---
@@ -171,18 +178,16 @@ canvas.addEventListener("click", e => {
 // --- Главный цикл ---
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     if (gameState === "menu") drawMenu();
-
     requestAnimationFrame(draw);
 }
 
 draw();
 
 // --- Блокировка масштабирования через жесты ---
-document.addEventListener('gesturestart', function (e) {
-    e.preventDefault();
-});
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('gesturechange', e => e.preventDefault());
+document.addEventListener('gestureend', e => e.preventDefault());
 </script>
 </body>
 </html>
