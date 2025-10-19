@@ -174,7 +174,7 @@ function drawArcanoid() {
     ctx.fillStyle = "#fff";
     ctx.font = "32px Arial";
     ctx.textAlign = "center";
-    ctx.fillText("Режим Арканоид (в разработке)", canvas.width/2, canvas.height/2);
+    ctx.fillText("Скоро (в разработке)", canvas.width/2, canvas.height/2);
 }
 
 function drawStory() {
@@ -183,7 +183,7 @@ function drawStory() {
     ctx.fillStyle = "#ffb6c1";
     ctx.font = "32px Arial";
     ctx.textAlign = "center";
-    ctx.fillText("Режим Сюжет (в разработке)", canvas.width/2, canvas.height/2);
+    ctx.fillText("Скоро (в разработке)", canvas.width/2, canvas.height/2);
 }
 
 // --- Клики по меню ---
@@ -254,3 +254,4 @@ function draw() {
 
 // --- Запуск ---
 draw();
+
