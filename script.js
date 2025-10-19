@@ -34,21 +34,23 @@ function resizeCanvas() {
 
     maleY = canvas.height - 50;
     femaleY = canvas.height - 50;
-
-    // Обновляем позиции кружков, если за пределами
-    floatingCircles[0].y = Math.min(floatingCircles[0].y, canvas.height - 100);
-    floatingCircles[1].y = Math.min(floatingCircles[1].y, canvas.height - 100);
 }
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-// --- Кнопки овальные ---
-function drawButton(text, x, y, w, h, color) {
+// --- Кнопки "знак бесконечности" ---
+function drawInfinityButton(text, x, y, w, h, color) {
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.ellipse(x + w/2, y + h/2, w/2, h/2, 0, 0, Math.PI*2);
+    // Левая половина
+    ctx.ellipse(x + w*0.25, y + h/2, w*0.25, h/2, 0, 0, Math.PI*2);
+    ctx.fill();
+    // Правая половина
+    ctx.beginPath();
+    ctx.ellipse(x + w*0.75, y + h/2, w*0.25, h/2, 0, 0, Math.PI*2);
     ctx.fill();
 
+    // Текст
     ctx.fillStyle = "#fff";
     ctx.font = `${Math.floor(h/2)}px Arial`;
     ctx.textAlign = "center";
@@ -83,8 +85,8 @@ function drawMenu() {
     ctx.fillText("🍑 Бананоид 🍌", canvas.width/2, canvas.height*0.15 + titleHeight/2 - 10);
 
     // Кнопки
-    drawButton("Играть", canvas.width/2 - 70, canvas.height*0.35, 140, 50, "#4CAF50");
-    drawButton("Сюжет", canvas.width/2 - 70, canvas.height*0.45, 140, 50, "#f44336");
+    drawInfinityButton("Играть", canvas.width/2 - 70, canvas.height*0.35, 140, 50, "#4CAF50");
+    drawInfinityButton("Сюжет", canvas.width/2 - 70, canvas.height*0.45, 140, 50, "#f44336");
 
     // Смайлики внизу
     ctx.font = "48px 'Segoe UI Emoji', Arial";
@@ -98,9 +100,8 @@ function drawMenu() {
     femaleX += femaleDx;
     if (femaleX < 20 || femaleX > canvas.width - 20) femaleDx = -femaleDx;
 
-    // Анимация двух кружков
+    // Два кружка
     floatingCircles.forEach(circle => {
-        // Тень
         ctx.shadowColor = "rgba(0,0,0,0.3)";
         ctx.shadowBlur = 5;
 
