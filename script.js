@@ -1,96 +1,141 @@
-// --- Canvas ---
-const canvas = document.createElement("canvas");
-const ctx = canvas.getContext("2d");
+// script.js
 
-// Canvas на весь экран
-canvas.style.position = "fixed";
-canvas.style.top = 0;
-canvas.style.left = 0;
-canvas.style.display = "block";
-document.body.style.margin = 0;
-document.body.style.padding = 0;
-document.body.style.overflow = "hidden";
-document.body.appendChild(canvas);
+window.addEventListener('load', () => {
+    const menuContainer = document.createElement('div');
+    menuContainer.id = 'main-menu';
+    document.body.appendChild(menuContainer);
 
-// --- Meta viewport ---
-// Для мобильных устройств нужно добавить в <head> HTML:
-// <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    Object.assign(menuContainer.style, {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#fff',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        fontFamily: 'Arial, sans-serif',
+        zIndex: '1000',
+    });
 
-// --- Переменные ---
-let gameState = "menu";
-let maleX = 50, maleY = 0, maleDx = 2;
-let femaleX = 150, femaleY = 0, femaleDx = -2;
+    // Фон из смайликов кроватей
+    const background = document.createElement('div');
+    background.id = 'menu-background';
+    menuContainer.appendChild(background);
 
-// --- Resize ---
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    Object.assign(background.style, {
+        position: 'absolute',
+        top: '0',
+        left: '0',
+        width: '100%',
+        height: '100%',
+        fontSize: '30px',
+        display: 'flex',
+        flexWrap: 'wrap',
+        overflow: 'hidden',
+        pointerEvents: 'none',
+    });
 
-    maleY = canvas.height - 50;
-    femaleY = canvas.height - 50;
-}
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
+    const bedEmoji = '🛏️';
+    const cols = Math.ceil(window.innerWidth / 40);
+    const rows = Math.ceil(window.innerHeight / 40);
+    for (let i = 0; i < rows * cols; i++) {
+        const span = document.createElement('span');
+        span.textContent = bedEmoji;
+        background.appendChild(span);
+    }
 
-// --- Кнопки ---
-function drawButton(text, x, y, w, h, color) {
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = "#fff";
-    ctx.font = `${Math.floor(h/2)}px Arial`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(text, x + w / 2, y + h / 2);
-}
-
-// --- Меню ---
-function drawMenu() {
-    ctx.fillStyle = "#111";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Заголовок с эмодзи
-    ctx.font = "48px 'Segoe UI Emoji', Arial";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#fff";
-    ctx.fillText("🍑 Бананоид 🍌", canvas.width / 2, canvas.height * 0.15);
-
-    // Кнопки
-    drawButton("Играть", canvas.width / 2 - 70, canvas.height * 0.35, 140, 50, "#4CAF50");
-    drawButton("Сюжет", canvas.width / 2 - 70, canvas.height * 0.45, 140, 50, "#f44336");
+    // Заголовок
+    const title = document.createElement('h1');
+    title.innerHTML = '🍑 Бананоид 🍌';
+    Object.assign(title.style, {
+        fontSize: '48px',
+        margin: '20px',
+        zIndex: '10',
+        textAlign: 'center',
+    });
+    menuContainer.appendChild(title);
 
     // Движущиеся смайлики внизу
-    ctx.font = "48px 'Segoe UI Emoji', Arial";
-    ctx.fillText("👨", maleX, maleY);
-    ctx.fillText("👩", femaleX, femaleY);
+    const footer = document.createElement('div');
+    Object.assign(footer.style, {
+        position: 'absolute',
+        bottom: '10px',
+        width: '100%',
+        display: 'flex',
+        justifyContent: 'space-between',
+        padding: '0 20px',
+        fontSize: '36px',
+        zIndex: '10',
+    });
+    const male = document.createElement('span');
+    male.textContent = '👨';
+    const female = document.createElement('span');
+    female.textContent = '👩';
+    footer.appendChild(male);
+    footer.appendChild(female);
+    menuContainer.appendChild(footer);
 
-    maleX += maleDx;
-    if (maleX < 20 || maleX > canvas.width - 20) maleDx = -maleDx;
+    // Анимация смайликов
+    let maleDirection = 1; // 1 — вправо, -1 — влево
+    let femaleDirection = -1;
 
-    femaleX += femaleDx;
-    if (femaleX < 20 || femaleX > canvas.width - 20) femaleDx = -femaleDx;
-}
+    function animateFooter() {
+        const maleLeft = male.offsetLeft + maleDirection * 1; // скорость 1px
+        const femaleLeft = female.offsetLeft + femaleDirection * 1;
 
-// --- Клик по меню ---
-canvas.addEventListener("click", e => {
-    const x = e.clientX;
-    const y = e.clientY;
+        if (maleLeft <= 0 || maleLeft + male.offsetWidth >= window.innerWidth) maleDirection *= -1;
+        if (femaleLeft <= 0 || femaleLeft + female.offsetWidth >= window.innerWidth) femaleDirection *= -1;
 
-    if (x >= canvas.width / 2 - 70 && x <= canvas.width / 2 + 70) {
-        if (y >= canvas.height * 0.35 && y <= canvas.height * 0.35 + 50)
-            alert("Запускаем режим Арканоид!");
-        if (y >= canvas.height * 0.45 && y <= canvas.height * 0.45 + 50)
-            alert("Запускаем режим Сюжет!");
+        male.style.left = maleLeft + 'px';
+        female.style.left = femaleLeft + 'px';
+
+        requestAnimationFrame(animateFooter);
+    }
+
+    male.style.position = 'relative';
+    female.style.position = 'relative';
+    animateFooter();
+
+    // Кнопки
+    const buttonsContainer = document.createElement('div');
+    Object.assign(buttonsContainer.style, {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        zIndex: '10',
+        marginTop: '40px',
+    });
+    menuContainer.appendChild(buttonsContainer);
+
+    const playButton = document.createElement('button');
+    playButton.textContent = 'Играть';
+    const storyButton = document.createElement('button');
+    storyButton.textContent = 'Сюжет';
+
+    [playButton, storyButton].forEach(btn => {
+        Object.assign(btn.style, {
+            padding: '15px 40px',
+            fontSize: '24px',
+            cursor: 'pointer',
+            borderRadius: '10px',
+            border: '2px solid #000',
+            backgroundColor: '#ffeb3b',
+        });
+        buttonsContainer.appendChild(btn);
+    });
+
+    // Заглушки для будущих режимов
+    playButton.addEventListener('click', () => startGameMode('play'));
+    storyButton.addEventListener('click', () => startGameMode('story'));
+
+    // Функция для будущих уровней и арканоида
+    function startGameMode(mode) {
+        menuContainer.style.display = 'none'; // скрываем меню
+        console.log(`Запуск режима: ${mode}`);
+        // Здесь позже добавим логику арканоида и сюжета
     }
 });
-
-// --- Главный цикл ---
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (gameState === "menu") drawMenu();
-
-    requestAnimationFrame(draw);
-}
-
-// --- Запуск ---
-draw();
