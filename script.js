@@ -13,7 +13,6 @@ document.body.style.overflow = "hidden";
 document.body.appendChild(canvas);
 
 // --- Meta viewport ---
-// Для мобильных устройств нужно добавить в <head> HTML:
 // <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 // --- Переменные ---
@@ -38,22 +37,22 @@ function drawButtonBra(x, y, w, h, color, text) {
     ctx.beginPath();
 
     // Левая чашка
-    ctx.moveTo(x + w * 0.2, y + h * 0.5);
-    ctx.bezierCurveTo(x + w * 0.05, y, x + w * 0.45, y, x + w * 0.4, y + h * 0.5);
-    ctx.closePath();
+    ctx.moveTo(x + w*0.2, y + h*0.6);
+    ctx.bezierCurveTo(x, y + h*0.6, x + w*0.1, y + h*0.3, x + w*0.2, y + h*0.2);
+    ctx.bezierCurveTo(x + w*0.35, y, x + w*0.4, y + h*0.6, x + w*0.2, y + h*0.6);
     ctx.fill();
 
     // Правая чашка
     ctx.beginPath();
-    ctx.moveTo(x + w * 0.6, y + h * 0.5);
-    ctx.bezierCurveTo(x + w * 0.55, y, x + w * 0.95, y, x + w * 0.8, y + h * 0.5);
-    ctx.closePath();
+    ctx.moveTo(x + w*0.8, y + h*0.6);
+    ctx.bezierCurveTo(x + w, y + h*0.6, x + w*0.9, y + h*0.3, x + w*0.8, y + h*0.2);
+    ctx.bezierCurveTo(x + w*0.65, y, x + w*0.6, y + h*0.6, x + w*0.8, y + h*0.6);
     ctx.fill();
 
     // Центральный мостик
     ctx.beginPath();
-    ctx.moveTo(x + w * 0.4, y + h * 0.5);
-    ctx.lineTo(x + w * 0.6, y + h * 0.5);
+    ctx.moveTo(x + w*0.4, y + h*0.45);
+    ctx.lineTo(x + w*0.6, y + h*0.45);
     ctx.lineWidth = 4;
     ctx.strokeStyle = color;
     ctx.stroke();
@@ -63,7 +62,7 @@ function drawButtonBra(x, y, w, h, color, text) {
     ctx.font = `${Math.floor(h / 3)}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(text, x + w / 2, y + h * 0.7);
+    ctx.fillText(text, x + w / 2, y + h * 0.75);
 }
 
 // --- Кнопка в виде трусиков (танго) ---
@@ -71,11 +70,10 @@ function drawButtonPanties(x, y, w, h, color, text) {
     ctx.fillStyle = color;
     ctx.beginPath();
 
-    // Левая часть
-    ctx.moveTo(x + w * 0.2, y);
-    ctx.bezierCurveTo(x, y + h * 0.5, x + w * 0.1, y + h, x + w * 0.5, y + h);
-    // Правая часть
-    ctx.bezierCurveTo(x + w * 0.9, y + h, x + w, y + h * 0.5, x + w * 0.8, y);
+    // Сужение к низу
+    ctx.moveTo(x + w*0.2, y);
+    ctx.bezierCurveTo(x, y + h*0.3, x + w*0.1, y + h, x + w*0.5, y + h);
+    ctx.bezierCurveTo(x + w*0.9, y + h, x + w, y + h*0.3, x + w*0.8, y);
     ctx.closePath();
     ctx.fill();
 
@@ -102,7 +100,7 @@ function drawMenu() {
     drawButtonBra(canvas.width / 2 - 100, canvas.height * 0.35, 200, 80, "#4CAF50", "Играть");
     drawButtonPanties(canvas.width / 2 - 100, canvas.height * 0.5, 200, 80, "#f44336", "Сюжет");
 
-    // Движущиеся смайлики внизу
+    // Движущиеся смайлики
     ctx.font = "48px 'Segoe UI Emoji', Arial";
     ctx.fillText("👨", maleX, maleY);
     ctx.fillText("👩", femaleX, femaleY);
@@ -133,9 +131,7 @@ canvas.addEventListener("click", e => {
 // --- Главный цикл ---
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     if (gameState === "menu") drawMenu();
-
     requestAnimationFrame(draw);
 }
 
