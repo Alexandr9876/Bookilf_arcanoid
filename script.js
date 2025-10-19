@@ -15,6 +15,8 @@ document.body.appendChild(canvas);
 let gameState = "menu";
 let maleX = 50, maleY = 0, maleDx = 2;
 let femaleX = 150, femaleY = 0, femaleDx = -2;
+let fadeOpacity = 0;
+let isTransitioning = false;
 
 // --- Resize ---
 function resizeCanvas() {
@@ -60,7 +62,7 @@ function drawButtonBra(x, y, w, h, color, text, textSize) {
     ctx.lineTo(x + w*0.75, y + h*0.15);
     ctx.stroke();
 
-    // Текст по центру чашек
+    // Текст
     ctx.fillStyle = "#fff";
     ctx.font = `${textSize}px Arial`;
     ctx.textAlign = "center";
@@ -72,15 +74,13 @@ function drawButtonBra(x, y, w, h, color, text, textSize) {
 function drawButtonStringPanties(x, y, w, h, color, text, textSize) {
     ctx.fillStyle = color;
 
-    // Основной треугольник
     ctx.beginPath();
-    ctx.moveTo(x + w*0.2, y);          
-    ctx.lineTo(x + w*0.5, y + h);      
-    ctx.lineTo(x + w*0.8, y);          
+    ctx.moveTo(x + w*0.2, y);
+    ctx.lineTo(x + w*0.5, y + h);
+    ctx.lineTo(x + w*0.8, y);
     ctx.closePath();
     ctx.fill();
 
-    // Резинка сверху
     ctx.strokeStyle = color;
     ctx.lineWidth = h*0.08;
     ctx.beginPath();
@@ -88,7 +88,6 @@ function drawButtonStringPanties(x, y, w, h, color, text, textSize) {
     ctx.lineTo(x + w*0.85, y);
     ctx.stroke();
 
-    // Текст по центру трусиков
     ctx.fillStyle = "#fff";
     ctx.font = `${textSize}px Arial`;
     ctx.textAlign = "center";
@@ -101,7 +100,6 @@ function drawMenu() {
     ctx.fillStyle = "#111";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Заголовок с динамическим размером
     const title = "🍑 Бананоид 🍌";
     let fontSize = 56; 
     ctx.font = `${fontSize}px 'Segoe UI Emoji', Arial`;
@@ -117,46 +115,103 @@ function drawMenu() {
     ctx.fillStyle = "#fff";
     ctx.fillText(title, canvas.width/2, canvas.height*0.15);
 
-    // Размер текста для кнопок одинаковый
     const buttonTextSize = Math.floor(canvas.height * 0.06);
 
-    // Кнопки
     drawButtonBra(canvas.width/2 - 120, canvas.height*0.3, 240, 120, "#4CAF50", "Играть", buttonTextSize);
     drawButtonStringPanties(canvas.width/2 - 100, canvas.height*0.5, 200, 80, "#f44336", "Сюжет", buttonTextSize);
 
-    // Смайлики внизу
     ctx.font = "48px 'Segoe UI Emoji', Arial";
     ctx.fillText("👨", maleX, maleY);
     ctx.fillText("👩", femaleX, femaleY);
 
     maleX += maleDx;
-    if (maleX < 20 || maleX > canvas.width - 20) maleDx = -maleDx;
+    if (maleX < 20 || maleX > canvas.width - 40) maleDx = -maleDx;
 
     femaleX += femaleDx;
-    if (femaleX < 20 || femaleX > canvas.width - 20) femaleDx = -femaleDx;
+    if (femaleX < 20 || femaleX > canvas.width - 40) femaleDx = -femaleDx;
 }
 
-// --- Клик по меню ---
+// --- Игровые заглушки ---
+function drawArcanoid() {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#fff";
+    ctx.font = "32px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Режим Арканоид (в разработке)", canvas.width/2, canvas.height/2);
+}
+
+function drawStory() {
+    ctx.fillStyle = "#222";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#ffb6c1";
+    ctx.font = "32px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Режим Сюжет (в разработке)", canvas.width/2, canvas.height/2);
+}
+
+// --- Клики по меню ---
 canvas.addEventListener("click", e => {
+    if (gameState !== "menu" || isTransitioning) return;
+
     const x = e.clientX;
     const y = e.clientY;
 
-    // Играть
     if (x >= canvas.width/2 - 120 && x <= canvas.width/2 + 120 &&
-        y >= canvas.height*0.3 && y <= canvas.height*0.3 + 120)
-        alert("Запускаем режим Арканоид!");
+        y >= canvas.height*0.3 && y <= canvas.height*0.3 + 120) {
+        startTransition("arcanoid");
+    }
 
-    // Сюжет
     if (x >= canvas.width/2 - 100 && x <= canvas.width/2 + 100 &&
-        y >= canvas.height*0.5 && y <= canvas.height*0.5 + 80)
-        alert("Запускаем режим Сюжет!");
+        y >= canvas.height*0.5 && y <= canvas.height*0.5 + 80) {
+        startTransition("story");
+    }
 });
+
+// --- Переход ---
+function startTransition(targetState) {
+    isTransitioning = true;
+    fadeOpacity = 0;
+
+    const fadeOut = setInterval(() => {
+        fadeOpacity += 0.05;
+        if (fadeOpacity >= 1) {
+            clearInterval(fadeOut);
+            if (targetState === "arcanoid") startArcanoid();
+            if (targetState === "story") startStory();
+
+            const fadeIn = setInterval(() => {
+                fadeOpacity -= 0.05;
+                if (fadeOpacity <= 0) {
+                    clearInterval(fadeIn);
+                    isTransitioning = false;
+                }
+            }, 30);
+        }
+    }, 30);
+}
+
+// --- Запуск режимов ---
+function startArcanoid() {
+    gameState = "arcanoid";
+}
+function startStory() {
+    gameState = "story";
+}
 
 // --- Главный цикл ---
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (gameState === "menu") drawMenu();
+    if (gameState === "arcanoid") drawArcanoid();
+    if (gameState === "story") drawStory();
+
+    // затемнение при переходе
+    if (isTransitioning) {
+        ctx.fillStyle = `rgba(0, 0, 0, ${fadeOpacity})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
 
     requestAnimationFrame(draw);
 }
