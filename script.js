@@ -27,6 +27,9 @@ function resizeCanvas() {
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
+// --- Универсальный размер текста для кнопок ---
+const BUTTON_FONT_SIZE = 36;
+
 // --- Бюстгальтер ---
 function drawButtonBra(x, y, w, h, color, text) {
     ctx.fillStyle = color;
@@ -53,37 +56,35 @@ function drawButtonBra(x, y, w, h, color, text) {
 
     // Текст по центру чашек
     ctx.fillStyle = "#fff";
-    const fontSize = Math.floor(h/3.5); // крупнее и одинаково для всех кнопок
-    ctx.font = `${fontSize}px Arial`;
+    ctx.font = `${BUTTON_FONT_SIZE}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(text, x + w/2, y + h*0.65);
+    ctx.fillText(text, x + w/2, y + h*0.75);
 }
 
 // --- Стринги ---
 function drawButtonStringPanties(x, y, w, h, color, text) {
     ctx.fillStyle = color;
 
-    // Мини-треугольник
+    // Основной треугольник
     ctx.beginPath();
-    ctx.moveTo(x + w*0.45, y);          
+    ctx.moveTo(x + w*0.2, y);          
     ctx.lineTo(x + w*0.5, y + h);      
-    ctx.lineTo(x + w*0.55, y);         
+    ctx.lineTo(x + w*0.8, y);          
     ctx.closePath();
     ctx.fill();
 
-    // Резинка (заметная)
+    // Резинка сверху (тонкая линия)
     ctx.strokeStyle = color;
-    ctx.lineWidth = h*0.15;
+    ctx.lineWidth = h*0.1;
     ctx.beginPath();
-    ctx.moveTo(x + w*0.45, y);
-    ctx.lineTo(x + w*0.55, y);
+    ctx.moveTo(x + w*0.15, y);
+    ctx.lineTo(x + w*0.85, y);
     ctx.stroke();
 
-    // Текст на резинке, центр
+    // Текст на резинке
     ctx.fillStyle = "#fff";
-    const fontSize = Math.floor(h/3.5); // одинаковый размер с бюстгальтером
-    ctx.font = `${fontSize}px Arial`;
+    ctx.font = `${BUTTON_FONT_SIZE}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
     ctx.fillText(text, x + w/2, y + h*0.05);
@@ -100,11 +101,11 @@ function drawMenu() {
     ctx.fillStyle = "#fff";
     ctx.fillText("🍑 Бананоид 🍌", canvas.width/2, canvas.height*0.15);
 
-    // Кнопки крупнее и гармоничные
-    drawButtonBra(canvas.width/2 - 120, canvas.height*0.3, 240, 120, "#4CAF50", "Играть");
-    drawButtonStringPanties(canvas.width/2 - 40, canvas.height*0.5, 80, 60, "#f44336", "Сюжет");
+    // Кнопки
+    drawButtonBra(canvas.width/2 - 100, canvas.height*0.3, 200, 100, "#4CAF50", "Играть");
+    drawButtonStringPanties(canvas.width/2 - 100, canvas.height*0.45, 200, 80, "#f44336", "Сюжет");
 
-    // Смайлики
+    // Смайлики внизу
     ctx.font = "48px 'Segoe UI Emoji', Arial";
     ctx.fillText("👨", maleX, maleY);
     ctx.fillText("👩", femaleX, femaleY);
@@ -122,20 +123,22 @@ canvas.addEventListener("click", e => {
     const y = e.clientY;
 
     // Играть
-    if (x >= canvas.width/2 - 120 && x <= canvas.width/2 + 120 &&
-        y >= canvas.height*0.3 && y <= canvas.height*0.3 + 120)
-        alert("Скоро режим Арканоид!");
+    if (x >= canvas.width/2 - 100 && x <= canvas.width/2 + 100 &&
+        y >= canvas.height*0.3 && y <= canvas.height*0.3 + 100)
+        alert("Запускаем режим Арканоид!");
 
     // Сюжет
-    if (x >= canvas.width/2 - 40 && x <= canvas.width/2 + 40 &&
-        y >= canvas.height*0.5 && y <= canvas.height*0.5 + 60)
-        alert("Скоро режим Сюжет!");
+    if (x >= canvas.width/2 - 100 && x <= canvas.width/2 + 100 &&
+        y >= canvas.height*0.45 && y <= canvas.height*0.45 + 80)
+        alert("Запускаем режим Сюжет!");
 });
 
 // --- Главный цикл ---
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     if (gameState === "menu") drawMenu();
+
     requestAnimationFrame(draw);
 }
 
