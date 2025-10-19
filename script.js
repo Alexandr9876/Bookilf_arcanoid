@@ -3,17 +3,57 @@ const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 document.body.appendChild(canvas);
 
-const FIELD_WIDTH = 300;
-const FIELD_HEIGHT = 500;
-canvas.width = FIELD_WIDTH;
-canvas.height = FIELD_HEIGHT;
+// --- Сюжетный уровень ---
+let storyHitCount = 0;
+let storyTargetX = canvas.width / 2;
+let storyTargetY = 100;
+let storyPaddleX = canvas.width / 2 - 25;
+const storyPaddleWidth = 50;
+let storyHitRegistered = false;
 
-canvas.style.position = "absolute";
-canvas.style.left = "50%";
-canvas.style.top = "50%";
-canvas.style.transform = "translate(-50%, -50%)";
-canvas.style.background = "#222";
-canvas.style.touchAction = "none";
+function resizeCanvas() {
+    // Используем реальные размеры видимой области
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Устанавливаем размер canvas
+    canvas.width = width;
+    canvas.height = height;
+
+    // Настройки для растяжения на весь экран
+    Object.assign(canvas.style, {
+        position: "fixed",
+        left: "0",
+        top: "0",
+        margin: "0",
+        padding: "0",
+        width: "100vw",
+        height: "100vh",
+        background: "#222",
+        touchAction: "none",
+        display: "block",
+        overflow: "hidden"
+    });
+
+    // Пересчитываем объекты под новый размер
+    storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
+    storyTargetX = canvas.width / 2;
+    storyTargetY = canvas.height / 4;
+    kissX = canvas.width / 2;
+    kissY = canvas.height / 2;
+
+    paddleWidth = canvas.width * 0.25;
+    brickWidth = (canvas.width - 40) / brickColumnCount;
+
+    createBricks();
+}
+
+
+// Перерисовываем при загрузке и изменении ориентации
+window.addEventListener("load", resizeCanvas);
+window.addEventListener("resize", resizeCanvas);
+window.addEventListener("orientationchange", resizeCanvas);
+
 
 // --- Летающие смайлики в меню ---
 let maleX = 50, maleY = canvas.height - 50, maleDx = 2;
@@ -70,14 +110,6 @@ function createBricks() {
     }
 }
 
-
-// --- Сюжетный уровень ---
-let storyHitCount = 0;
-let storyTargetX = canvas.width / 2;
-let storyTargetY = 100;
-let storyPaddleX = canvas.width / 2 - 25;
-const storyPaddleWidth = 50;
-let storyHitRegistered = false;
 
 // --- Поп-ап ---
 let popupMessage = "";
@@ -271,28 +303,41 @@ function drawStoryLevel1() {
     ctx.textAlign = "center";
     ctx.fillText("😎", storyPaddleX + storyPaddleWidth / 2, canvas.height - 30);
 
+    // --- Прямоугольник платформы для коллизий ---
+    const paddleRect = {
+        x: storyPaddleX,
+        y: canvas.height - 30 - 14, // 14 — половина размера смайлика
+        w: storyPaddleWidth,
+        h: 28
+    };
+
     // --- Поцелуй (мяч) ---
     ctx.font = "28px 'Segoe UI Emoji', Arial";
     ctx.fillText("💋", kissX, kissY);
 
     // --- Грустный/смущённый смайлик ---
-    ctx.font = "56px 'Segoe UI Emoji', Arial"; // крупнее в 2 раза
+    ctx.font = "56px 'Segoe UI Emoji', Arial"; // крупнее
     ctx.fillText(dodgeCount < 3 ? "👧" : "💖", storyTargetX, storyTargetY);
 
     // --- Движение поцелуя ---
-    if (kissX + kdx > canvas.width - 10 || kissX + kdx < 10) kdx = -kdx;
-    if (kissY + kdy < 10) kdy = -kdy;
-    else if (kissY + kdy > canvas.height - 60) {
-        if (kissX > storyPaddleX && kissX < storyPaddleX + storyPaddleWidth) {
-            kdy = -kdy;
-        } else {
-            // поцелуй упал
-            showPopup("Игра окончена 💔", [
-                {text:"Ещё раз", action:startStoryLevel1, color:"#4CAF50"},
-                {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
-            ]);
-            return;
-        }
+    if (kissX + kdx > canvas.width - 14 || kissX + kdx < 14) kdx = -kdx;
+    if (kissY + kdy < 14) kdy = -kdy;
+
+    // --- Проверка столкновения с платформой ---
+    const kissRect = { x: kissX - 14, y: kissY - 14, w: 28, h: 28 };
+    if (rectsOverlap(kissRect.x, kissRect.y, kissRect.w, kissRect.h,
+                     paddleRect.x, paddleRect.y, paddleRect.w, paddleRect.h)) {
+        kdy = -kdy;
+        kissY = paddleRect.y - kissRect.h / 2 - 1; // смещаем поцелуй чуть выше
+    }
+
+    // --- Проверяем, упал ли поцелуй ---
+    if (kissY > canvas.height - 14) {
+        showPopup("Подкат провелен 💔", [
+            {text:"Ещё раз", action:startStoryLevel1, color:"#4CAF50"},
+            {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
+        ]);
+        return;
     }
 
     kissX += kdx;
@@ -319,6 +364,14 @@ function drawStoryLevel1() {
             {text:"В меню", action:()=>gameState="menu", color:"#f44336"}
         ]);
     }
+}
+
+// --- Функция проверки пересечения прямоугольников ---
+function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2){
+    return x1 < x2 + w2 &&
+           x1 + w1 > x2 &&
+           y1 < y2 + h2 &&
+           y1 + h1 > y2;
 }
 
 
