@@ -156,9 +156,10 @@ function drawBall() {
 }
 
 function drawPaddle() {
-   ctx.font = "108px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
+    ctx.font = "108px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif"; // в 3 раза больше
     ctx.textAlign = "center";
-    ctx.fillText("🍆", paddleX + paddleWidth / 2, canvas.height - 30);
+    ctx.textBaseline = "middle";
+    ctx.fillText("🍆", paddleX + paddleWidth / 2, canvas.height - 60); // чуть выше, чтобы не обрезалось
 }
 
 function drawBricks() {
