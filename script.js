@@ -187,14 +187,132 @@ ctx.fillRect(0, 0, canvas.width, canvas.height);
     if (femaleX < 20 || femaleX > canvas.width - 40) femaleDx = -femaleDx;
 }
 
-// --- Игровые заглушки ---
+// --- Арканоид (Бананоид) ---
+let paddle = { x: 0, y: 0, w: 90, h: 30, speed: 8 };
+let ball = { x: 0, y: 0, dx: 4, dy: -4, size: 24 };
+let blocks = [];
+let score = 0;
+let lives = 3;
+
+function initArcanoid() {
+    paddle.w = 90;
+    paddle.h = 30;
+    paddle.x = canvas.width / 2 - paddle.w / 2;
+    paddle.y = canvas.height - 80;
+
+    ball.x = canvas.width / 2;
+    ball.y = canvas.height / 2;
+    ball.dx = 4;
+    ball.dy = -4;
+
+    score = 0;
+    lives = 3;
+
+    generateBlocks();
+}
+
+function generateBlocks() {
+    blocks = [];
+    const cols = 8;
+    const rows = 4;
+    const gap = 12;
+    const size = 36;
+    const offsetX = (canvas.width - (cols * (size + gap))) / 2;
+    const offsetY = 80;
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            blocks.push({
+                x: offsetX + c * (size + gap),
+                y: offsetY + r * (size + gap),
+                w: size,
+                h: size,
+                hit: false
+            });
+        }
+    }
+}
+
 function drawArcanoid() {
-    ctx.fillStyle = "#000";
+    // фон
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, "#ff9eb5");
+    gradient.addColorStop(1, "#ffd6a5");
+    ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#fff";
-    ctx.font = "32px Arial";
+
+    // --- блоки (персики) ---
+    ctx.font = "32px 'Segoe UI Emoji', Arial";
+    blocks.forEach(b => {
+        if (!b.hit) ctx.fillText("🍑", b.x, b.y);
+    });
+
+    // --- платформа (баклажан, крупнее остальных) ---
+    ctx.font = "96px 'Segoe UI Emoji', Arial";
     ctx.textAlign = "center";
-    ctx.fillText("Скоро (в разработке)", canvas.width/2, canvas.height/2);
+    ctx.fillText("🍆", paddle.x + paddle.w / 2, paddle.y);
+
+    // --- мяч (банан) ---
+    ctx.font = "32px 'Segoe UI Emoji', Arial";
+    ctx.fillText("🍌", ball.x, ball.y);
+
+    // --- счёт и жизни ---
+    ctx.fillStyle = "#fff";
+    ctx.font = "24px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText(`🍑: ${score}`, 20, 35);
+    ctx.textAlign = "right";
+    ctx.fillText(`❤️: ${lives}`, canvas.width - 20, 35);
+
+    // --- движение ---
+    ball.x += ball.dx;
+    ball.y += ball.dy;
+
+    // --- столкновения со стенами ---
+    if (ball.x < 0 || ball.x > canvas.width - 32) ball.dx *= -1;
+    if (ball.y < 0) ball.dy *= -1;
+
+    // --- падение ---
+    if (ball.y > canvas.height) {
+        lives--;
+        if (lives > 0) {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.dy = -4;
+        } else {
+            gameState = "menu";
+        }
+    }
+
+    // --- движение платформы (мышь / палец) ---
+    canvas.onmousemove = e => {
+        paddle.x = e.clientX - paddle.w / 2;
+    };
+    canvas.ontouchmove = e => {
+        const touch = e.touches[0];
+        paddle.x = touch.clientX - paddle.w / 2;
+    };
+
+    // --- отскок от платформы ---
+    if (ball.y + ball.size > paddle.y &&
+        ball.x > paddle.x &&
+        ball.x < paddle.x + paddle.w) {
+        ball.dy *= -1;
+        ball.y = paddle.y - ball.size;
+    }
+
+    // --- отскок от блоков ---
+    blocks.forEach(b => {
+        if (!b.hit &&
+            ball.x > b.x && ball.x < b.x + b.w &&
+            ball.y > b.y && ball.y < b.y + b.h) {
+            b.hit = true;
+            ball.dy *= -1;
+            score++;
+        }
+    });
+}
+
 }
 
 function drawStory() {
@@ -249,8 +367,10 @@ function startTransition(targetState) {
 
 // --- Запуск режимов ---
 function startArcanoid() {
+    initArcanoid();
     gameState = "arcanoid";
 }
+
 function startStory() {
     gameState = "story";
 }
@@ -274,6 +394,7 @@ function draw() {
 
 // --- Запуск ---
 draw();
+
 
 
 
