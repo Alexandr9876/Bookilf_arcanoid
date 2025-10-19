@@ -291,12 +291,14 @@ ctx.fillText(`Таблеток Виагра: ${playLives}`, 20, 70);
     if(ball.x < 0 || ball.x > canvas.width - ball.size) ball.dx = -ball.dx;
     if(ball.y < 0) ball.dy = -ball.dy;
 
-    // проверка столкновения с платформой
-    if(ball.y + ball.size >= paddle.y &&
-       ball.x + ball.size >= paddle.x &&
-       ball.x <= paddle.x + paddle.width) {
-        ball.dy = -ball.dy;
-    }
+ // Проверка столкновения с платформой
+if(ball.y + ball.size >= paddle.y - paddle.height*3 &&
+   ball.y <= paddle.y &&
+   ball.x + ball.size >= paddle.x &&
+   ball.x <= paddle.x + paddle.width) {
+    ball.dy = -ball.dy;
+}
+
 
     // проверка попадания по блокам
     blocks.forEach(block => {
@@ -568,6 +570,7 @@ function draw() {
 
 // --- Запуск ---
 draw();
+
 
 
 
