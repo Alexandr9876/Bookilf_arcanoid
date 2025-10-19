@@ -146,8 +146,12 @@ function drawButtonStringPanties(x, y, w, h, color, text, textSize) {
 
 // --- Меню ---
 function drawMenu() {
-    ctx.fillStyle = "#111";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+   // Фон: мягкий романтичный градиент
+const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+gradient.addColorStop(0, "#ff9eb5");  // светло-розовый верх
+gradient.addColorStop(1, "#ffd6a5");  // персиковый низ
+ctx.fillStyle = gradient;
+ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // фон кроватей
     drawBedBackground();
@@ -270,5 +274,6 @@ function draw() {
 
 // --- Запуск ---
 draw();
+
 
 
