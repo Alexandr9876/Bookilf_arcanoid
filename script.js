@@ -104,6 +104,9 @@
             createBricks();
         }
 
+        // ВЫЗЫВАЕМ resizeCanvas СРАЗУ ПОСЛЕ ОПРЕДЕЛЕНИЯ
+        resizeCanvas();
+
         window.addEventListener("load", resizeCanvas);
         window.addEventListener("resize", resizeCanvas);
         window.addEventListener("orientationchange", resizeCanvas);
@@ -194,11 +197,11 @@
                 for (let r = 0; r < brickRowCount; r++) {
                     const b = bricks[c][r];
                     if (b.status === 1) {
-                        const brickCenterX = b.x + brickWidth / 2;
-                        const brickCenterY = b.y + brickHeight / 2;
-                        const distance = Math.sqrt(Math.pow(ballX - brickCenterX, 2) + Math.pow(ballY - brickCenterY, 2));
-                        
-                        if (distance < ballRadius + Math.min(brickWidth, brickHeight) / 2) {
+                        // Простое определение столкновения через прямоугольники
+                        if (ballX + ballRadius > b.x && 
+                            ballX - ballRadius < b.x + brickWidth && 
+                            ballY + ballRadius > b.y && 
+                            ballY - ballRadius < b.y + brickHeight) {
                             dy = -dy;
                             b.status = 0;
                             score++;
@@ -228,7 +231,7 @@
             ctx.fillStyle = "#111";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const title = "🍑 АРКАНОИД СТРАСТИ 🍌";
+            const title = "🍑 БАНАНОИД 🍌";
             const fontSize = canvas.width < 350 ? 20 : 26;
             ctx.font = fontSize + "px 'Segoe UI Emoji', Arial";
             ctx.textAlign = "center";
@@ -442,6 +445,8 @@
                 else if(ballY + dy > canvas.height - paddleHeight - ballRadius) {
                     if(ballX > paddleX && ballX < paddleX + paddleWidth) {
                         dy = -dy;
+                        // Добавляем немного случайности для интересной физики
+                        dx += (Math.random() - 0.5) * 0.5;
                     } else {
                         showPopup("💀 Игра кончила_ся!", [
                             {text:"Еееще...", action:startGame, color:"#4CAF50"},
@@ -488,4 +493,3 @@
     </script>
 </body>
 </html>
-
