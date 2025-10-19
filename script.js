@@ -3,299 +3,371 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🍌 БАНАНОИД 🍑</title>
+    <title>🍑 БАНАНОИД 🍌</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
             background: #222;
-        }
-        canvas {
-            display: block;
+            font-family: Arial, sans-serif;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
+<script>
+    // --- Canvas ---
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    document.body.appendChild(canvas);
 
-    <script>
-        // Получаем canvas и контекст
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+    // --- Переменные ---
+    let gameState = "menu"; // menu, playing, story1, popup
+    let score = 0;
 
-        // Настройки игры
-        let gameState = 'menu'; // menu, playing, gameOver
-        let score = 0;
-        let lives = 3;
+    let maleX = 50, maleY = 0, maleDx = 2;
+    let femaleX = 250, femaleY = 0, femaleDx = -2;
+    let maleSymbolY = 0, femaleSymbolY = 0;
+    let maleSymbolDy = 1.2, femaleSymbolDy = 1.5;
 
-        // Мяч
-        const ballRadius = 10;
-        let ballX = 0;
-        let ballY = 0;
-        let ballSpeedX = 5;
-        let ballSpeedY = -5;
+    let paddleWidth = 0, paddleHeight = 10, paddleX = 0;
+    const ballRadius = 10;
+    let ballX = 0, ballY = 0, dx = 3, dy = -3;
 
-        // Платформа
-        const paddleHeight = 15;
-        const paddleWidth = 100;
-        let paddleX = 0;
+    const brickRowCount = 4, brickColumnCount = 6, brickPadding = 5, brickHeight = 25;
+    let bricks = [], brickWidth = 0;
 
-        // Кирпичи
-        const brickRowCount = 5;
-        const brickColumnCount = 8;
-        const brickWidth = 75;
-        const brickHeight = 20;
-        const brickPadding = 10;
-        const brickOffsetTop = 60;
-        const brickOffsetLeft = 30;
-        
-        let bricks = [];
+    let storyTargetX = 0, storyTargetY = 100;
+    let storyPaddleX = 0, storyPaddleWidth = 50, storyDodgeCount = 0;
+    let kissX = 0, kissY = 0, kdx = 9, kdy = -9, targetDodging = false;
 
-        // Инициализация
-        function init() {
-            resizeCanvas();
-            createBricks();
-            resetBall();
-            
-            // Слушатели событий
-            window.addEventListener('resize', resizeCanvas);
-            document.addEventListener('mousemove', mouseMoveHandler);
-            document.addEventListener('touchmove', touchMoveHandler, { passive: false });
-            canvas.addEventListener('click', clickHandler);
-            
-            // Запуск игрового цикла
-            gameLoop();
-        }
+    let popupMessage = "", popupButtons = [];
 
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            
-            // Пересчет позиций
-            paddleX = (canvas.width - paddleWidth) / 2;
-            if (gameState === 'menu') {
-                ballX = canvas.width / 2;
-                ballY = canvas.height / 2;
+    // --- Resize canvas ---
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        Object.assign(canvas.style, {
+            position: "fixed",
+            left: "0",
+            top: "0",
+            margin: "0",
+            padding: "0",
+            width: "100vw",
+            height: "100vh",
+            background: "#222",
+            touchAction: "none",
+            display: "block"
+        });
+
+        maleY = canvas.height - 50;
+        femaleY = canvas.height - 50;
+        maleSymbolY = canvas.height - 100;
+        femaleSymbolY = canvas.height - 150;
+
+        storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
+        storyTargetX = canvas.width / 2;
+        storyTargetY = canvas.height / 4;
+
+        paddleWidth = Math.max(canvas.width * 0.25, 100);
+        paddleX = (canvas.width - paddleWidth) / 2;
+
+        ballX = canvas.width / 2;
+        ballY = canvas.height - 60;
+
+        kissX = canvas.width / 2;
+        kissY = canvas.height / 2;
+
+        brickWidth = Math.max((canvas.width - 40) / brickColumnCount, 30);
+
+        createBricks();
+    }
+
+    function createBricks() {
+        bricks = [];
+        const totalWidth = brickColumnCount * (brickWidth + brickPadding) - brickPadding;
+        const offsetX = (canvas.width - totalWidth) / 2;
+        const offsetY = 60;
+        for (let c = 0; c < brickColumnCount; c++) {
+            bricks[c] = [];
+            for (let r = 0; r < brickRowCount; r++) {
+                const brickX = offsetX + c * (brickWidth + brickPadding);
+                const brickY = offsetY + r * (brickHeight + brickPadding);
+                bricks[c][r] = { x: brickX, y: brickY, status: 1 };
             }
         }
+    }
 
-        function createBricks() {
-            bricks = [];
-            for (let c = 0; c < brickColumnCount; c++) {
-                bricks[c] = [];
-                for (let r = 0; r < brickRowCount; r++) {
-                    bricks[c][r] = { x: 0, y: 0, status: 1 };
+    // --- Игровые функции ---
+    function startGame() {
+        ballX = canvas.width / 2;
+        ballY = canvas.height - 60;
+        dx = 3;
+        dy = -3;
+        paddleX = (canvas.width - paddleWidth) / 2;
+        score = 0;
+        createBricks();
+        gameState = "playing";
+    }
+
+    function startStoryLevel1() {
+        storyDodgeCount = 0;
+        storyTargetX = canvas.width / 2;
+        storyTargetY = canvas.height / 4;
+        storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
+        kissX = canvas.width / 2;
+        kissY = canvas.height - 60;
+
+        const kSpeed = 9;
+        const kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6;
+        kdx = kSpeed * Math.cos(kAngle);
+        kdy = -kSpeed * Math.sin(kAngle);
+
+        gameState = "story1";
+    }
+
+    function drawBall() {
+        ctx.font = "28px 'Segoe UI Emoji', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("🍌", ballX, ballY);
+    }
+
+    function drawPaddle() {
+        ctx.font = "36px 'Segoe UI Emoji', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🍆", paddleX + paddleWidth / 2, canvas.height - 30);
+    }
+
+    function drawBricks() {
+        const totalWidth = brickColumnCount * (brickWidth + brickPadding) - brickPadding;
+        const offsetX = (canvas.width - totalWidth) / 2;
+        for (let c = 0; c < brickColumnCount; c++) {
+            for (let r = 0; r < brickRowCount; r++) {
+                const b = bricks[c][r];
+                if (b && b.status === 1) {
+                    const brickX = offsetX + c * (brickWidth + brickPadding);
+                    ctx.font = "28px 'Segoe UI Emoji', sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText("🍑", brickX + brickWidth / 2, b.y + brickHeight / 2);
                 }
             }
         }
+    }
 
-        function resetBall() {
-            ballX = canvas.width / 2;
-            ballY = canvas.height - 50;
-            ballSpeedX = 5;
-            ballSpeedY = -5;
-        }
+    function drawScore() {
+        ctx.font = "18px Arial";
+        ctx.fillStyle = "#fff";
+        ctx.textAlign = "left";
+        ctx.fillText("Обананеных персиков: " + score, 10, 25);
+    }
 
-        function mouseMoveHandler(e) {
-            const relativeX = e.clientX - canvas.offsetLeft;
-            if (relativeX > 0 && relativeX < canvas.width) {
-                paddleX = relativeX - paddleWidth / 2;
-            }
-        }
-
-        function touchMoveHandler(e) {
-            e.preventDefault();
-            const relativeX = e.touches[0].clientX - canvas.offsetLeft;
-            if (relativeX > 0 && relativeX < canvas.width) {
-                paddleX = relativeX - paddleWidth / 2;
-            }
-        }
-
-        function clickHandler(e) {
-            if (gameState === 'menu') {
-                startGame();
-            } else if (gameState === 'gameOver') {
-                resetGame();
-            }
-        }
-
-        function startGame() {
-            gameState = 'playing';
-            score = 0;
-            lives = 3;
-            createBricks();
-            resetBall();
-        }
-
-        function resetGame() {
-            gameState = 'menu';
-        }
-
-        function collisionDetection() {
-            for (let c = 0; c < brickColumnCount; c++) {
-                for (let r = 0; r < brickRowCount; r++) {
-                    const brick = bricks[c][r];
-                    if (brick.status === 1) {
-                        const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
-                        const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
-                        
-                        if (ballX > brickX && 
-                            ballX < brickX + brickWidth && 
-                            ballY > brickY && 
-                            ballY < brickY + brickHeight) {
-                            ballSpeedY = -ballSpeedY;
-                            brick.status = 0;
-                            score++;
-                            
-                            if (score === brickRowCount * brickColumnCount) {
-                                gameState = 'gameOver';
-                            }
+    function collisionDetection() {
+        for (let c = 0; c < brickColumnCount; c++) {
+            for (let r = 0; r < brickRowCount; r++) {
+                const b = bricks[c][r];
+                if (b && b.status === 1) {
+                    if (ballX + ballRadius > b.x &&
+                        ballX - ballRadius < b.x + brickWidth &&
+                        ballY + ballRadius > b.y &&
+                        ballY - ballRadius < b.y + brickHeight) {
+                        dy = -dy;
+                        b.status = 0;
+                        score++;
+                        if (score === brickRowCount * brickColumnCount) {
+                            showPopup("🎉 Гигант! 🍆🍌🍑", [
+                                {text:"Еееще...", action:startGame, color:"#4CAF50"},
+                                {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
+                            ]);
                         }
                     }
                 }
             }
         }
+    }
 
-        function drawBall() {
-            ctx.beginPath();
-            ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
-            ctx.fillStyle = '#ffeb3b';
-            ctx.fill();
-            ctx.closePath();
+    function drawButton(text, x, y, w, h, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, w, h);
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "#fff";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, x + w / 2, y + h / 2);
+    }
+
+    function drawMenu() {
+        ctx.fillStyle = "#111";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const title = "🍑 БАНАНОИД 🍌";
+        const fontSize = canvas.width < 350 ? 20 : 26;
+        ctx.font = fontSize + "px 'Segoe UI Emoji', Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        const textWidth = ctx.measureText(title).width;
+        const rectWidth = textWidth + 20;
+        const rectHeight = fontSize + 12;
+        const rectX = canvas.width / 2 - rectWidth / 2;
+        const rectY = 50;
+
+        ctx.fillStyle = "#FF69B4";
+        ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
+        ctx.fillStyle = "#fff";
+        ctx.fillText(title, canvas.width / 2, rectY + rectHeight / 2);
+
+        const btnY1 = rectY + rectHeight + 60;
+        const btnY2 = btnY1 + 60;
+        drawButton("Играть", canvas.width/2-70, btnY1, 140, 40, "#4CAF50");
+        drawButton("Сюжет", canvas.width/2-70, btnY2, 140, 40, "#f44336");
+
+        ctx.font = "32px 'Segoe UI Emoji', Arial";
+        ctx.fillText("👨", maleX, maleY);
+        ctx.fillText("👩", femaleX, femaleY);
+        maleX += maleDx; if(maleX < 20 || maleX > canvas.width - 20) maleDx = -maleDx;
+        femaleX += femaleDx; if(femaleX < 20 || femaleX > canvas.width - 20) femaleDx = -femaleDx;
+
+        canvas.menuButtonY1 = btnY1; 
+        canvas.menuButtonY2 = btnY2;
+    }
+
+    function showPopup(message, buttons) {
+        popupMessage = message;
+        popupButtons = buttons.map(b => ({...b}));
+        gameState = "popup";
+    }
+
+    // --- Story level ---
+    function drawStoryLevel1() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = "28px 'Segoe UI Emoji', Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("😎", storyPaddleX + storyPaddleWidth / 2, canvas.height - 30);
+        const paddleRect = {x: storyPaddleX, y: canvas.height - 44, w: storyPaddleWidth, h:28};
+        ctx.fillText("💋", kissX, kissY);
+        ctx.font = "56px 'Segoe UI Emoji', Arial";
+        ctx.fillText(storyDodgeCount < 3 ? "👧" : "💖", storyTargetX, storyTargetY);
+
+        if (kissX + kdx > canvas.width - 14 || kissX + kdx < 14) kdx = -kdx;
+        if (kissY + kdy < 14) kdy = -kdy;
+
+        const kissRect = { x: kissX - 14, y: kissY - 14, w: 28, h: 28 };
+        if (rectsOverlap(kissRect.x, kissRect.y, kissRect.w, kissRect.h,
+                         paddleRect.x, paddleRect.y, paddleRect.w, paddleRect.h)) {
+            kdy = -kdy; kissY = paddleRect.y - kissRect.h / 2 - 1;
         }
 
-        function drawPaddle() {
-            ctx.beginPath();
-            ctx.rect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
-            ctx.fillStyle = '#4CAF50';
-            ctx.fill();
-            ctx.closePath();
+        if (kissY > canvas.height - 14) {
+            showPopup("Подкат провелен 💔", [
+                {text:"Ещё раз", action:startStoryLevel1, color:"#4CAF50"},
+                {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
+            ]);
+            return;
         }
 
-        function drawBricks() {
-            for (let c = 0; c < brickColumnCount; c++) {
-                for (let r = 0; r < brickRowCount; r++) {
-                    if (bricks[c][r].status === 1) {
-                        const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
-                        const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
-                        
-                        ctx.beginPath();
-                        ctx.rect(brickX, brickY, brickWidth, brickHeight);
-                        ctx.fillStyle = '#ff5722';
-                        ctx.fill();
-                        ctx.closePath();
-                    }
+        kissX += kdx; kissY += kdy;
+        const dxToTarget = storyTargetX - kissX;
+        const dyToTarget = storyTargetY - kissY;
+        const distance = Math.sqrt(dxToTarget*dxToTarget + dyToTarget*dyToTarget);
+
+        if (distance < 60 && storyDodgeCount < 3 && !targetDodging) {
+            storyTargetX = Math.random() * (canvas.width - 80) + 40;
+            storyTargetY = Math.random() * (canvas.height / 2 - 80) + 40;
+            storyDodgeCount++; targetDodging = true;
+            setTimeout(() => targetDodging = false, 800);
+        }
+
+        if (distance < 50 && storyDodgeCount >= 3) {
+            showPopup("Первый шаг — сделан 💞", [
+                {text:"Продолжить", action:startStoryLevel1, color:"#4CAF50"},
+                {text:"В меню", action:()=>gameState="menu", color:"#f44336"}
+            ]);
+        }
+    }
+
+    function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2) {
+        return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
+    }
+
+    function handlePointer(e) {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+
+        if(gameState === "menu") {
+            const b1 = canvas.menuButtonY1, b2 = canvas.menuButtonY2;
+            if(x >= canvas.width/2-70 && x <= canvas.width/2+70) {
+                if(y >= b1 && y <= b1+40) startGame();
+                if(y >= b2 && y <= b2+40) startStoryLevel1();
+            }
+        } else if(gameState === "popup") {
+            popupButtons.forEach(btn => {
+                if(x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+                    btn.action();
                 }
+            });
+        }
+    }
+
+    canvas.addEventListener("click", handlePointer);
+    canvas.addEventListener("touchstart", handlePointer);
+
+    let isDragging = false;
+    canvas.addEventListener("touchmove", e => {
+        e.preventDefault();
+        isDragging = true;
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        const relX = touch.clientX - rect.left;
+        if(gameState === "playing") paddleX = Math.min(Math.max(relX - paddleWidth/2, 0), canvas.width - paddleWidth);
+        else if(gameState === "story1") storyPaddleX = Math.min(Math.max(relX - storyPaddleWidth/2, 0), canvas.width - storyPaddleWidth);
+    });
+
+    canvas.addEventListener("touchend", () => { isDragging = false; });
+    canvas.addEventListener("mousemove", e => { if(!isDragging) return; const rect = canvas.getBoundingClientRect(); const relX = e.clientX - rect.left; if(gameState==="playing") paddleX=Math.min(Math.max(relX-paddleWidth/2,0),canvas.width-paddleWidth); else if(gameState==="story1") storyPaddleX=Math.min(Math.max(relX-storyPaddleWidth/2,0),canvas.width-storyPaddleWidth); });
+    canvas.addEventListener("mousedown", e => { isDragging = true; handlePointer(e); });
+    canvas.addEventListener("mouseup", () => { isDragging = false; });
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if(gameState === "menu") drawMenu();
+        else if(gameState === "playing") {
+            drawBricks(); drawBall(); drawPaddle(); drawScore(); collisionDetection();
+            if(ballX+dx>canvas.width-ballRadius||ballX+dx<ballRadius) dx=-dx;
+            if(ballY+dy<ballRadius) dy=-dy;
+            else if(ballY+dy>canvas.height-paddleHeight-ballRadius){
+                if(ballX>paddleX&&ballX<paddleX+paddleWidth){ dy=-dy; dx+=(Math.random()-0.5)*0.5; }
+                else showPopup("💀 Игра кончила_ся!", [{text:"Еееще...", action:startGame, color:"#4CAF50"}, {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}]);
             }
+            ballX+=dx; ballY+=dy;
+        } else if(gameState==="story1") drawStoryLevel1();
+
+        if(gameState==="popup"){
+            ctx.fillStyle="rgba(0,0,0,0.7)"; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle="#fff"; ctx.font="22px Arial"; ctx.textAlign="center"; ctx.fillText(popupMessage,canvas.width/2,canvas.height/2-60);
+            const bw=140,bh=40;
+            popupButtons.forEach((btn,i)=>{
+                const bx=canvas.width/2-bw/2,by=canvas.height/2+i*60;
+                btn.x=bx; btn.y=by; btn.w=bw; btn.h=bh;
+                ctx.fillStyle=btn.color||"#4CAF50"; ctx.fillRect(bx,by,bw,bh);
+                ctx.fillStyle="#fff"; ctx.font="18px Arial"; ctx.fillText(btn.text,bx+bw/2,by+bh/2);
+            });
         }
 
-        function drawScore() {
-            ctx.font = '16px Arial';
-            ctx.fillStyle = '#fff';
-            ctx.fillText('Счёт: ' + score, 8, 20);
-            ctx.fillText('Жизни: ' + lives, canvas.width - 80, 20);
-        }
+        requestAnimationFrame(draw);
+    }
 
-        function drawMenu() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.font = '48px Arial';
-            ctx.fillStyle = '#fff';
-            ctx.textAlign = 'center';
-            ctx.fillText('🍌 БАНАНОИД 🍑', canvas.width / 2, canvas.height / 2 - 50);
-            
-            ctx.font = '24px Arial';
-            ctx.fillText('Кликните чтобы начать', canvas.width / 2, canvas.height / 2 + 50);
-            
-            // Анимированный мяч в меню
-            ctx.beginPath();
-            ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
-            ctx.fillStyle = '#ffeb3b';
-            ctx.fill();
-            ctx.closePath();
-            
-            // Двигаем мяч в меню
-            ballX += 3;
-            if (ballX > canvas.width - ballRadius || ballX < ballRadius) {
-                ballSpeedX = -ballSpeedX;
-            }
-        }
-
-        function drawGameOver() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.font = '48px Arial';
-            ctx.fillStyle = '#fff';
-            ctx.textAlign = 'center';
-            ctx.fillText('Игра окончена!', canvas.width / 2, canvas.height / 2 - 50);
-            
-            ctx.font = '24px Arial';
-            ctx.fillText('Счёт: ' + score, canvas.width / 2, canvas.height / 2);
-            ctx.fillText('Кликните для рестарта', canvas.width / 2, canvas.height / 2 + 50);
-        }
-
-        function update() {
-            if (gameState !== 'playing') return;
-
-            // Движение мяча
-            ballX += ballSpeedX;
-            ballY += ballSpeedY;
-
-            // Столкновение со стенами
-            if (ballX + ballSpeedX > canvas.width - ballRadius || ballX + ballSpeedX < ballRadius) {
-                ballSpeedX = -ballSpeedX;
-            }
-            if (ballY + ballSpeedY < ballRadius) {
-                ballSpeedY = -ballSpeedY;
-            } else if (ballY + ballSpeedY > canvas.height - ballRadius) {
-                // Столкновение с платформой
-                if (ballX > paddleX && ballX < paddleX + paddleWidth) {
-                    ballSpeedY = -ballSpeedY;
-                    // Добавляем немного физики - угол отскока зависит от места удара
-                    const hitPos = (ballX - paddleX) / paddleWidth;
-                    ballSpeedX = 8 * (hitPos - 0.5);
-                } else {
-                    lives--;
-                    if (lives <= 0) {
-                        gameState = 'gameOver';
-                    } else {
-                        resetBall();
-                    }
-                }
-            }
-
-            collisionDetection();
-        }
-
-        function draw() {
-            // Очистка canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Рисуем элементы игры
-            drawBricks();
-            drawBall();
-            drawPaddle();
-            drawScore();
-            
-            // Рисуем экраны меню/конца игры
-            if (gameState === 'menu') {
-                drawMenu();
-            } else if (gameState === 'gameOver') {
-                drawGameOver();
-            }
-        }
-
-        function gameLoop() {
-            update();
-            draw();
-            requestAnimationFrame(gameLoop);
-        }
-
-        // Запускаем игру
-        init();
-    </script>
+    // --- Инициализация ---
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+    window.addEventListener("orientationchange", resizeCanvas);
+    draw();
+</script>
 </body>
 </html>
