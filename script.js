@@ -33,6 +33,8 @@ let maleX = 50, maleY = 0, maleDx = 2;
 let femaleX = 150, femaleY = 0, femaleDx = -2;
 let fadeOpacity = 0;
 let isTransitioning = false;
+let showGameOverPopup = false;
+
 
 // --- Фон кроватей ---
 const bedEmoji = "🛏️";
@@ -273,16 +275,17 @@ function drawArcanoid() {
     if (ball.y < 0) ball.dy *= -1;
 
     // --- падение ---
-    if (ball.y > canvas.height) {
-        lives--;
-        if (lives > 0) {
-            ball.x = canvas.width / 2;
-            ball.y = canvas.height / 2;
-            ball.dy = -4;
-        } else {
-            gameState = "menu";
-        }
+  if (ball.y > canvas.height) {
+    lives--;
+    if (lives > 0) {
+        ball.x = canvas.width / 2;
+        ball.y = canvas.height / 2;
+        ball.dy = -4;
+    } else {
+        showGameOverPopup = true;
     }
+}
+
 
     // --- движение платформы (мышь / палец) ---
     canvas.onmousemove = e => {
@@ -311,7 +314,40 @@ function drawArcanoid() {
             score++;
         }
     });
-}
+if (showGameOverPopup) {
+    // затемнение фона
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // окно попапа
+    const popupW = 400;
+    const popupH = 200;
+    const popupX = canvas.width / 2 - popupW / 2;
+    const popupY = canvas.height / 2 - popupH / 2;
+
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(popupX, popupY, popupW, popupH);
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(popupX, popupY, popupW, popupH);
+
+    // текст
+    ctx.fillStyle = "#000";
+    ctx.font = "24px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Ты сражался, как тигр", canvas.width / 2, popupY + 60);
+
+    // кнопки
+    ctx.fillStyle = "#4CAF50";
+    ctx.fillRect(popupX + 40, popupY + 120, 140, 50);
+    ctx.fillStyle = "#fff";
+    ctx.fillText("Еще раз", popupX + 40 + 70, popupY + 120 + 25);
+
+    ctx.fillStyle = "#f44336";
+    ctx.fillRect(popupX + 220, popupY + 120, 140, 50);
+    ctx.fillStyle = "#fff";
+    ctx.fillText("Выйти", popupX + 220 + 70, popupY + 120 + 25);
+
 
 }
 
@@ -326,6 +362,32 @@ function drawStory() {
 
 // --- Клики по меню ---
 canvas.addEventListener("click", e => {
+   if (showGameOverPopup) {
+    const x = e.clientX;
+    const y = e.clientY;
+
+    const popupW = 400;
+    const popupH = 200;
+    const popupX = canvas.width / 2 - popupW / 2;
+    const popupY = canvas.height / 2 - popupH / 2;
+
+    // "Еще раз"
+    if (x >= popupX + 40 && x <= popupX + 40 + 140 &&
+        y >= popupY + 120 && y <= popupY + 120 + 50) {
+        initArcanoid();
+        showGameOverPopup = false;
+        return;
+    }
+
+    // "Выйти"
+    if (x >= popupX + 220 && x <= popupX + 220 + 140 &&
+        y >= popupY + 120 && y <= popupY + 120 + 50) {
+        showGameOverPopup = false;
+        gameState = "menu";
+        return;
+    }
+}
+
     if (gameState !== "menu" || isTransitioning) return;
 
     const x = e.clientX;
@@ -394,6 +456,7 @@ function draw() {
 
 // --- Запуск ---
 draw();
+
 
 
 
