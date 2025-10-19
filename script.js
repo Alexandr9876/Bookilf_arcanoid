@@ -2,7 +2,6 @@
 const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 
-// Стили, чтобы canvas занимал весь экран и был зафиксирован
 canvas.style.position = "fixed";
 canvas.style.top = 0;
 canvas.style.left = 0;
@@ -22,17 +21,11 @@ let gameState = "menu";
 let maleX = 50, maleY = 0, maleDx = 2;
 let femaleX = 150, femaleY = 0, femaleDx = -2;
 
-// Новые смайлики "кружки" для анимации
-let floatingCircles = [];
-for (let i = 0; i < 10; i++) {
-    floatingCircles.push({
-        x: Math.random() * window.innerWidth,
-        y: window.innerHeight + Math.random() * 200,
-        size: 30 + Math.random() * 20,
-        speed: 1 + Math.random() * 2,
-        type: Math.random() < 0.5 ? "male" : "female" // тип кружка
-    });
-}
+// Два кружка: ♂ и ♀
+let floatingCircles = [
+    {x: 100, y: canvas.height * 0.8, size: 40, speed: 1.5, type: "male", dir: -1},
+    {x: canvas.width - 100, y: canvas.height * 0.8, size: 40, speed: 1.5, type: "female", dir: -1}
+];
 
 // --- Resize ---
 function resizeCanvas() {
@@ -41,28 +34,35 @@ function resizeCanvas() {
 
     maleY = canvas.height - 50;
     femaleY = canvas.height - 50;
+
+    // Обновляем позиции кружков, если за пределами
+    floatingCircles[0].y = Math.min(floatingCircles[0].y, canvas.height - 100);
+    floatingCircles[1].y = Math.min(floatingCircles[1].y, canvas.height - 100);
 }
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-// --- Кнопки ---
+// --- Кнопки овальные ---
 function drawButton(text, x, y, w, h, color) {
     ctx.fillStyle = color;
-    ctx.fillRect(x, y, w, h);
+    ctx.beginPath();
+    ctx.ellipse(x + w/2, y + h/2, w/2, h/2, 0, 0, Math.PI*2);
+    ctx.fill();
+
     ctx.fillStyle = "#fff";
     ctx.font = `${Math.floor(h/2)}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(text, x + w / 2, y + h / 2);
+    ctx.fillText(text, x + w/2, y + h/2);
 }
 
-// --- Главный меню ---
+// --- Главное меню ---
 function drawMenu() {
-    // Фон тематический
-    ctx.fillStyle = "#ffefc1"; // светлый персиковый фон
+    // Фон
+    ctx.fillStyle = "#ffefc1";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Анимированные "кровати" на фоне
+    // Анимированные "кровати"
     ctx.font = "40px 'Segoe UI Emoji', Arial";
     for (let y = 50; y < canvas.height; y += 100) {
         for (let x = 50; x < canvas.width; x += 100) {
@@ -70,17 +70,23 @@ function drawMenu() {
         }
     }
 
-    // Заголовок с эмодзи
+    // Подложка под название
+    const titleWidth = 400;
+    const titleHeight = 70;
+    ctx.fillStyle = "rgba(255,255,255,0.7)";
+    ctx.fillRect((canvas.width-titleWidth)/2, canvas.height*0.12, titleWidth, titleHeight);
+
+    // Заголовок
     ctx.font = "48px 'Segoe UI Emoji', Arial";
     ctx.textAlign = "center";
     ctx.fillStyle = "#000";
-    ctx.fillText("🍑 Бананоид 🍌", canvas.width / 2, canvas.height * 0.15);
+    ctx.fillText("🍑 Бананоид 🍌", canvas.width/2, canvas.height*0.15 + titleHeight/2 - 10);
 
     // Кнопки
-    drawButton("Играть", canvas.width / 2 - 70, canvas.height * 0.35, 140, 50, "#4CAF50");
-    drawButton("Сюжет", canvas.width / 2 - 70, canvas.height * 0.45, 140, 50, "#f44336");
+    drawButton("Играть", canvas.width/2 - 70, canvas.height*0.35, 140, 50, "#4CAF50");
+    drawButton("Сюжет", canvas.width/2 - 70, canvas.height*0.45, 140, 50, "#f44336");
 
-    // Движущиеся смайлики внизу
+    // Смайлики внизу
     ctx.font = "48px 'Segoe UI Emoji', Arial";
     ctx.fillStyle = "#000";
     ctx.fillText("👨", maleX, maleY);
@@ -92,7 +98,7 @@ function drawMenu() {
     femaleX += femaleDx;
     if (femaleX < 20 || femaleX > canvas.width - 20) femaleDx = -femaleDx;
 
-    // Анимация новых кружков
+    // Анимация двух кружков
     floatingCircles.forEach(circle => {
         // Тень
         ctx.shadowColor = "rgba(0,0,0,0.3)";
@@ -100,26 +106,20 @@ function drawMenu() {
 
         ctx.fillStyle = circle.type === "male" ? "#1E90FF" : "#FF69B4";
         ctx.beginPath();
-        ctx.arc(circle.x, circle.y, circle.size / 2, 0, Math.PI * 2);
+        ctx.arc(circle.x, circle.y, circle.size/2, 0, Math.PI*2);
         ctx.fill();
 
-        // Символ внутри кружка
         ctx.shadowBlur = 0;
         ctx.fillStyle = "#fff";
-        ctx.font = `${circle.size / 1.5}px Arial`;
+        ctx.font = `${circle.size/1.5}px Arial`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(circle.type === "male" ? "♂" : "♀", circle.x, circle.y);
 
-        // Движение
-        circle.y -= circle.speed;
-        if (circle.y + circle.size / 2 < canvas.height / 2 && Math.random() < 0.01) {
-            circle.speed = -circle.speed; // меняем направление вниз
-        }
-        if (circle.y - circle.size / 2 > canvas.height) {
-            circle.y = canvas.height + Math.random() * 200;
-            circle.x = Math.random() * canvas.width;
-            circle.speed = 1 + Math.random() * 2;
+        // Движение вверх/вниз, не заходит на кнопки
+        circle.y += circle.speed * circle.dir;
+        if (circle.y - circle.size/2 < canvas.height*0.25 || circle.y + circle.size/2 > canvas.height*0.8) {
+            circle.dir *= -1;
         }
     });
 }
@@ -129,10 +129,10 @@ canvas.addEventListener("click", e => {
     const x = e.clientX;
     const y = e.clientY;
 
-    if (x >= canvas.width / 2 - 70 && x <= canvas.width / 2 + 70) {
-        if (y >= canvas.height * 0.35 && y <= canvas.height * 0.35 + 50)
+    if (x >= canvas.width/2 - 70 && x <= canvas.width/2 + 70) {
+        if (y >= canvas.height*0.35 && y <= canvas.height*0.35 + 50)
             alert("Запускаем режим Арканоид!");
-        if (y >= canvas.height * 0.45 && y <= canvas.height * 0.45 + 50)
+        if (y >= canvas.height*0.45 && y <= canvas.height*0.45 + 50)
             alert("Запускаем режим Сюжет!");
     }
 });
