@@ -2,7 +2,6 @@
 const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 
-// Canvas на весь экран
 canvas.style.position = "fixed";
 canvas.style.top = 0;
 canvas.style.left = 0;
@@ -11,10 +10,6 @@ document.body.style.margin = 0;
 document.body.style.padding = 0;
 document.body.style.overflow = "hidden";
 document.body.appendChild(canvas);
-
-// --- Meta viewport ---
-// Для мобильных устройств нужно добавить в <head> HTML:
-// <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 // --- Переменные ---
 let gameState = "menu";
@@ -32,41 +27,39 @@ function resizeCanvas() {
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-// --- Бюстгальтер ---
+// --- Бюстгальтер реалистичный ---
 function drawButtonBra(x, y, w, h, color, text) {
     ctx.fillStyle = color;
-    ctx.beginPath();
 
     // Левая чашка
-    ctx.moveTo(x + w*0.2, y + h*0.5);
-    ctx.bezierCurveTo(x, y + h*0.2, x + w*0.25, y + h*0.9, x + w*0.4, y + h*0.5);
-    ctx.closePath();
+    ctx.beginPath();
+    ctx.moveTo(x + w*0.2, y + h*0.3);
+    ctx.bezierCurveTo(x, y + h*0.3, x + w*0.25, y + h*0.9, x + w*0.4, y + h*0.3);
     ctx.fill();
 
     // Правая чашка
     ctx.beginPath();
-    ctx.moveTo(x + w*0.6, y + h*0.5);
-    ctx.bezierCurveTo(x + w*0.75, y + h*0.9, x + w, y + h*0.2, x + w*0.8, y + h*0.5);
-    ctx.closePath();
+    ctx.moveTo(x + w*0.6, y + h*0.3);
+    ctx.bezierCurveTo(x + w*0.75, y + h*0.9, x + w, y + h*0.3, x + w*0.8, y + h*0.3);
     ctx.fill();
 
     // Мостик
     ctx.beginPath();
-    ctx.moveTo(x + w*0.4, y + h*0.5);
-    ctx.lineTo(x + w*0.6, y + h*0.5);
-    ctx.lineWidth = 4;
+    ctx.moveTo(x + w*0.4, y + h*0.3);
+    ctx.lineTo(x + w*0.6, y + h*0.3);
+    ctx.lineWidth = 6;
     ctx.strokeStyle = color;
     ctx.stroke();
 
     // Соски (выпуклости)
     ctx.beginPath();
-    ctx.arc(x + w*0.25, y + h*0.7, h*0.08, 0, Math.PI*2);
+    ctx.arc(x + w*0.25, y + h*0.65, h*0.07, 0, Math.PI*2);
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(x + w*0.75, y + h*0.7, h*0.08, 0, Math.PI*2);
+    ctx.arc(x + w*0.75, y + h*0.65, h*0.07, 0, Math.PI*2);
     ctx.fill();
 
-    // Текст
+    // Текст по центру
     ctx.fillStyle = "#fff";
     ctx.font = `${Math.floor(h/4)}px Arial`;
     ctx.textAlign = "center";
@@ -74,17 +67,17 @@ function drawButtonBra(x, y, w, h, color, text) {
     ctx.fillText(text, x + w/2, y + h*0.85);
 }
 
-// --- Трусики (танго) ---
+// --- Трусики танго реалистичные ---
 function drawButtonPanties(x, y, w, h, color, text) {
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.moveTo(x + w*0.1, y);           // левый верх
-    ctx.lineTo(x + w*0.5, y + h);       // низ (треугольник)
-    ctx.lineTo(x + w*0.9, y);           // правый верх
+    ctx.quadraticCurveTo(x, y + h*0.5, x + w*0.5, y + h); // левая сторона плавная
+    ctx.quadraticCurveTo(x + w, y + h*0.5, x + w*0.9, y); // правая сторона плавная
     ctx.closePath();
     ctx.fill();
 
-    // Текст
+    // Текст по центру
     ctx.fillStyle = "#fff";
     ctx.font = `${Math.floor(h/4)}px Arial`;
     ctx.textAlign = "center";
