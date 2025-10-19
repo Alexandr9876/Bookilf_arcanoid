@@ -2,6 +2,7 @@
 const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 document.body.style.margin = 0;
+document.body.style.padding = 0;
 document.body.style.overflow = "hidden";
 document.body.appendChild(canvas);
 
@@ -10,24 +11,22 @@ let gameState = "menu";
 let maleX = 50, maleY = 0, maleDx = 2;
 let femaleX = 150, femaleY = 0, femaleDx = -2;
 
-let popupMessage = "";
-let popupButtons = [];
+// --- Размеры игрового поля ---
+let fieldWidth, fieldHeight;
 
-// --- Resize с сохранением пропорций ---
+// --- Resize ---
 function resizeCanvas() {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
 
-    canvas.height = screenHeight;
+    fieldHeight = screenHeight;
+    fieldWidth = Math.min(screenWidth, fieldHeight * 9 / 16);
 
-    // Пропорция игрового поля 9:16
-    const desiredWidth = canvas.height * 9 / 16;
-    canvas.width = Math.min(screenWidth, desiredWidth);
+    canvas.width = fieldWidth;
+    canvas.height = fieldHeight;
 
-    // Центрирование по горизонтали
-    canvas.style.position = "absolute";
-    canvas.style.left = `${(screenWidth - canvas.width) / 2}px`;
-    canvas.style.top = "0";
+    // Смещения для рисования по центру экрана
+    canvas.dataset.offsetX = (screenWidth - fieldWidth) / 2;
 
     maleY = canvas.height - 50;
     femaleY = canvas.height - 50;
@@ -40,7 +39,7 @@ function drawButton(text, x, y, w, h, color) {
     ctx.fillStyle = color;
     ctx.fillRect(x, y, w, h);
     ctx.fillStyle = "#fff";
-    ctx.font = "20px Arial";
+    ctx.font = `${Math.floor(h/2)}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(text, x + w / 2, y + h / 2);
@@ -79,7 +78,6 @@ canvas.addEventListener("click", e => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // Играть
     if (x >= canvas.width / 2 - 70 && x <= canvas.width / 2 + 70) {
         if (y >= 200 && y <= 250) alert("Запускаем режим Арканоид!");
         if (y >= 270 && y <= 320) alert("Запускаем режим Сюжет!");
