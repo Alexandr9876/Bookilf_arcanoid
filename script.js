@@ -13,10 +13,22 @@ let femaleX = 150, femaleY = 0, femaleDx = -2;
 let popupMessage = "";
 let popupButtons = [];
 
-// --- Resize ---
+// --- Resize с сохранением пропорций ---
 function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+
+    canvas.height = screenHeight;
+
+    // Пропорция игрового поля 9:16
+    const desiredWidth = canvas.height * 9 / 16;
+    canvas.width = Math.min(screenWidth, desiredWidth);
+
+    // Центрирование по горизонтали
+    canvas.style.position = "absolute";
+    canvas.style.left = `${(screenWidth - canvas.width) / 2}px`;
+    canvas.style.top = "0";
+
     maleY = canvas.height - 50;
     femaleY = canvas.height - 50;
 }
@@ -36,7 +48,6 @@ function drawButton(text, x, y, w, h, color) {
 
 // --- Меню ---
 function drawMenu() {
-    // Фон
     ctx.fillStyle = "#111";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -50,7 +61,7 @@ function drawMenu() {
     drawButton("Играть", canvas.width / 2 - 70, 200, 140, 50, "#4CAF50");
     drawButton("Сюжет", canvas.width / 2 - 70, 270, 140, 50, "#f44336");
 
-    // Движущиеся смайлики внизу
+    // Движущиеся смайлики
     ctx.font = "48px 'Segoe UI Emoji', Arial";
     ctx.fillText("👨", maleX, maleY);
     ctx.fillText("👩", femaleX, femaleY);
@@ -70,12 +81,8 @@ canvas.addEventListener("click", e => {
 
     // Играть
     if (x >= canvas.width / 2 - 70 && x <= canvas.width / 2 + 70) {
-        if (y >= 200 && y <= 250) {
-            alert("Запускаем режим Арканоид!"); // Здесь потом будет startGame()
-        }
-        if (y >= 270 && y <= 320) {
-            alert("Запускаем режим Сюжет!"); // Здесь потом будет startStory()
-        }
+        if (y >= 200 && y <= 250) alert("Запускаем режим Арканоид!");
+        if (y >= 270 && y <= 320) alert("Запускаем режим Сюжет!");
     }
 });
 
@@ -83,9 +90,7 @@ canvas.addEventListener("click", e => {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (gameState === "menu") {
-        drawMenu();
-    }
+    if (gameState === "menu") drawMenu();
 
     requestAnimationFrame(draw);
 }
