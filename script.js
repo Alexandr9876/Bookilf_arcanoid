@@ -27,8 +27,8 @@ function resizeCanvas() {
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-// --- Бюстгальтер реалистичный ---
-function drawButtonBra(x, y, w, h, color, text) {
+// --- Бюстгальтер ---
+function drawButtonBra(x, y, w, h, color, text, textSize) {
     ctx.fillStyle = color;
 
     // Левая чашка
@@ -62,15 +62,14 @@ function drawButtonBra(x, y, w, h, color, text) {
 
     // Текст по центру чашек
     ctx.fillStyle = "#fff";
-    const fontSize = Math.floor(h / 2.5); // крупный одинаковый размер
-    ctx.font = `${fontSize}px Arial`;
+    ctx.font = `${textSize}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(text, x + w/2, y + h*0.65);
 }
 
 // --- Стринги ---
-function drawButtonStringPanties(x, y, w, h, color, text) {
+function drawButtonStringPanties(x, y, w, h, color, text, textSize) {
     ctx.fillStyle = color;
 
     // Основной треугольник
@@ -81,21 +80,20 @@ function drawButtonStringPanties(x, y, w, h, color, text) {
     ctx.closePath();
     ctx.fill();
 
-    // Резинка сверху (тонкая линия)
+    // Резинка сверху
     ctx.strokeStyle = color;
-    ctx.lineWidth = h*0.1;
+    ctx.lineWidth = h*0.08;
     ctx.beginPath();
     ctx.moveTo(x + w*0.15, y);
     ctx.lineTo(x + w*0.85, y);
     ctx.stroke();
 
-    // Текст на трусиках, ниже треугольника
+    // Текст по центру трусиков
     ctx.fillStyle = "#fff";
-    const fontSize = Math.floor(h / 2.5); // одинаковый размер текста
-    ctx.font = `${fontSize}px Arial`;
+    ctx.font = `${textSize}px Arial`;
     ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    ctx.fillText(text, x + w/2, y + h + 5); // 5px ниже треугольника
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x + w/2, y + h/2);
 }
 
 // --- Меню ---
@@ -103,15 +101,28 @@ function drawMenu() {
     ctx.fillStyle = "#111";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Заголовок
-    ctx.font = "56px 'Segoe UI Emoji', Arial";
+    // Заголовок с динамическим размером
+    const title = "🍑 Бананоид 🍌";
+    let fontSize = 56; 
+    ctx.font = `${fontSize}px 'Segoe UI Emoji', Arial`;
+    let textWidth = ctx.measureText(title).width;
+
+    while (textWidth > canvas.width - 40 && fontSize > 10) {
+        fontSize -= 2;
+        ctx.font = `${fontSize}px 'Segoe UI Emoji', Arial`;
+        textWidth = ctx.measureText(title).width;
+    }
+
     ctx.textAlign = "center";
     ctx.fillStyle = "#fff";
-    ctx.fillText("🍑 Бананоид 🍌", canvas.width/2, canvas.height*0.15);
+    ctx.fillText(title, canvas.width/2, canvas.height*0.15);
+
+    // Размер текста для кнопок одинаковый
+    const buttonTextSize = Math.floor(canvas.height * 0.06);
 
     // Кнопки
-    drawButtonBra(canvas.width/2 - 120, canvas.height*0.3, 240, 120, "#4CAF50", "Играть");
-    drawButtonStringPanties(canvas.width/2 - 100, canvas.height*0.5, 200, 80, "#f44336", "Сюжет");
+    drawButtonBra(canvas.width/2 - 120, canvas.height*0.3, 240, 120, "#4CAF50", "Играть", buttonTextSize);
+    drawButtonStringPanties(canvas.width/2 - 100, canvas.height*0.5, 200, 80, "#f44336", "Сюжет", buttonTextSize);
 
     // Смайлики внизу
     ctx.font = "48px 'Segoe UI Emoji', Arial";
