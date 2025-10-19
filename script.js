@@ -18,6 +18,37 @@ let femaleX = 150, femaleY = 0, femaleDx = -2;
 let fadeOpacity = 0;
 let isTransitioning = false;
 
+// --- Фон кроватей ---
+const bedEmoji = "🛏️";
+let bedGrid = [];
+
+function generateBedGrid() {
+    bedGrid = [];
+    const emojiSize = 60; // шаг между кроватями (можно увеличить или уменьшить)
+    const cols = Math.ceil(canvas.width / emojiSize);
+    const rows = Math.ceil(canvas.height / emojiSize);
+
+    for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+            bedGrid.push({
+                x: x * emojiSize,
+                y: y * emojiSize
+            });
+        }
+    }
+}
+
+function drawBedBackground() {
+    ctx.font = "40px 'Segoe UI Emoji', Arial";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.globalAlpha = 0.12; // лёгкая прозрачность
+    bedGrid.forEach(bed => {
+        ctx.fillText(bedEmoji, bed.x, bed.y);
+    });
+    ctx.globalAlpha = 1.0;
+}
+
 // --- Resize ---
 function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -25,6 +56,8 @@ function resizeCanvas() {
 
     maleY = canvas.height - 50;
     femaleY = canvas.height - 50;
+
+    generateBedGrid(); // обновляем сетку кроватей при изменении размера
 }
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
@@ -99,6 +132,9 @@ function drawButtonStringPanties(x, y, w, h, color, text, textSize) {
 function drawMenu() {
     ctx.fillStyle = "#111";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // фон кроватей
+    drawBedBackground();
 
     const title = "🍑 Бананоид 🍌";
     let fontSize = 56; 
