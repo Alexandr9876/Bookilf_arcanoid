@@ -11,43 +11,49 @@ let storyPaddleX = canvas.width / 2 - 25;
 const storyPaddleWidth = 50;
 let storyHitRegistered = false;
 
-// --- Настраиваем canvas под устройство ---
 function resizeCanvas() {
-    const aspectRatio = 9 / 16; // соотношение сторон (ширина / высота)
+    // Используем реальные размеры видимой области
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
-    if (/Mobi|Android/i.test(navigator.userAgent)) {
-        // --- Смартфон: на весь экран ---
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    } else {
-        // --- Компьютер: высота = окно, ширина по пропорции ---
-        canvas.height = window.innerHeight;
-        canvas.width = canvas.height * aspectRatio;
+    // Устанавливаем размер canvas
+    canvas.width = width;
+    canvas.height = height;
 
-        // Центрируем по горизонтали
-        canvas.style.display = "block";
-        canvas.style.margin = "0 auto";
-    }
+    // Настройки для растяжения на весь экран
+    Object.assign(canvas.style, {
+        position: "fixed",
+        left: "0",
+        top: "0",
+        margin: "0",
+        padding: "0",
+        width: "100vw",
+        height: "100vh",
+        background: "#222",
+        touchAction: "none",
+        display: "block",
+        overflow: "hidden"
+    });
 
-    // Обновляем позиции объектов при изменении размера
+    // Пересчитываем объекты под новый размер
     storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
     storyTargetX = canvas.width / 2;
     storyTargetY = canvas.height / 4;
     kissX = canvas.width / 2;
     kissY = canvas.height / 2;
+
+    paddleWidth = canvas.width * 0.25;
+    brickWidth = (canvas.width - 40) / brickColumnCount;
+
+    createBricks();
 }
 
-// Вызываем при загрузке и изменении ориентации
+
+// Перерисовываем при загрузке и изменении ориентации
+window.addEventListener("load", resizeCanvas);
 window.addEventListener("resize", resizeCanvas);
 window.addEventListener("orientationchange", resizeCanvas);
-window.addEventListener("load", resizeCanvas);
 
-canvas.style.position = "absolute";
-canvas.style.left = "50%";
-canvas.style.top = "50%";
-canvas.style.transform = "translate(-50%, -50%)";
-canvas.style.background = "#222";
-canvas.style.touchAction = "none";
 
 // --- Летающие смайлики в меню ---
 let maleX = 50, maleY = canvas.height - 50, maleDx = 2;
@@ -452,3 +458,4 @@ function draw(){
 }
 
 draw();
+
