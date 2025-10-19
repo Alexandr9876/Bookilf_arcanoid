@@ -33,56 +33,58 @@ function drawButtonBra(x, y, w, h, color, text) {
 
     // Левая чашка
     ctx.beginPath();
-    ctx.moveTo(x + w*0.2, y + h*0.3);
-    ctx.bezierCurveTo(x, y + h*0.3, x + w*0.25, y + h*0.9, x + w*0.4, y + h*0.3);
+    ctx.moveTo(x + w*0.2, y + h*0.4);
+    ctx.bezierCurveTo(x, y + h*0.4, x + w*0.25, y + h*0.9, x + w*0.45, y + h*0.4);
     ctx.fill();
 
     // Правая чашка
     ctx.beginPath();
-    ctx.moveTo(x + w*0.6, y + h*0.3);
-    ctx.bezierCurveTo(x + w*0.75, y + h*0.9, x + w, y + h*0.3, x + w*0.8, y + h*0.3);
+    ctx.moveTo(x + w*0.55, y + h*0.4);
+    ctx.bezierCurveTo(x + w*0.75, y + h*0.9, x + w, y + h*0.4, x + w*0.8, y + h*0.4);
     ctx.fill();
 
-    // Мостик
+    // Мостик сверху
     ctx.beginPath();
-    ctx.moveTo(x + w*0.4, y + h*0.3);
-    ctx.lineTo(x + w*0.6, y + h*0.3);
+    ctx.moveTo(x + w*0.45, y + h*0.4);
+    ctx.lineTo(x + w*0.55, y + h*0.4);
     ctx.lineWidth = 6;
     ctx.strokeStyle = color;
     ctx.stroke();
 
-    // Соски (выпуклости)
-    ctx.beginPath();
-    ctx.arc(x + w*0.25, y + h*0.65, h*0.07, 0, Math.PI*2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(x + w*0.75, y + h*0.65, h*0.07, 0, Math.PI*2);
-    ctx.fill();
-
-    // Текст по центру
+    // Текст по центру чашек
     ctx.fillStyle = "#fff";
     ctx.font = `${Math.floor(h/4)}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(text, x + w/2, y + h*0.85);
+    ctx.fillText(text, x + w/2, y + h*0.75);
 }
 
-// --- Трусики танго реалистичные ---
-function drawButtonPanties(x, y, w, h, color, text) {
+// --- Стринги ---
+function drawButtonStringPanties(x, y, w, h, color, text) {
     ctx.fillStyle = color;
+
+    // Основной треугольник
     ctx.beginPath();
-    ctx.moveTo(x + w*0.1, y);           // левый верх
-    ctx.quadraticCurveTo(x, y + h*0.5, x + w*0.5, y + h); // левая сторона плавная
-    ctx.quadraticCurveTo(x + w, y + h*0.5, x + w*0.9, y); // правая сторона плавная
+    ctx.moveTo(x + w*0.2, y);          // левый верх
+    ctx.lineTo(x + w*0.5, y + h);      // низ
+    ctx.lineTo(x + w*0.8, y);          // правый верх
     ctx.closePath();
     ctx.fill();
 
-    // Текст по центру
+    // Резинка сверху (тонкая линия)
+    ctx.strokeStyle = color;
+    ctx.lineWidth = h*0.1;
+    ctx.beginPath();
+    ctx.moveTo(x + w*0.15, y);
+    ctx.lineTo(x + w*0.85, y);
+    ctx.stroke();
+
+    // Текст на резинке
     ctx.fillStyle = "#fff";
-    ctx.font = `${Math.floor(h/4)}px Arial`;
+    ctx.font = `${Math.floor(h/5)}px Arial`;
     ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(text, x + w/2, y + h*0.5);
+    ctx.textBaseline = "bottom";
+    ctx.fillText(text, x + w/2, y + h*0.05);
 }
 
 // --- Меню ---
@@ -97,8 +99,8 @@ function drawMenu() {
     ctx.fillText("🍑 Бананоид 🍌", canvas.width/2, canvas.height*0.15);
 
     // Кнопки
-    drawButtonBra(canvas.width/2 - 100, canvas.height*0.35, 200, 80, "#4CAF50", "Играть");
-    drawButtonPanties(canvas.width/2 - 100, canvas.height*0.5, 200, 80, "#f44336", "Сюжет");
+    drawButtonBra(canvas.width/2 - 100, canvas.height*0.3, 200, 100, "#4CAF50", "Играть");
+    drawButtonStringPanties(canvas.width/2 - 100, canvas.height*0.45, 200, 80, "#f44336", "Сюжет");
 
     // Смайлики внизу
     ctx.font = "48px 'Segoe UI Emoji', Arial";
@@ -119,12 +121,12 @@ canvas.addEventListener("click", e => {
 
     // Играть (бюстгальтер)
     if (x >= canvas.width/2 - 100 && x <= canvas.width/2 + 100 &&
-        y >= canvas.height*0.35 && y <= canvas.height*0.35 + 80)
+        y >= canvas.height*0.3 && y <= canvas.height*0.3 + 100)
         alert("Запускаем режим Арканоид!");
 
-    // Сюжет (трусики)
+    // Сюжет (стринги)
     if (x >= canvas.width/2 - 100 && x <= canvas.width/2 + 100 &&
-        y >= canvas.height*0.5 && y <= canvas.height*0.5 + 80)
+        y >= canvas.height*0.45 && y <= canvas.height*0.45 + 80)
         alert("Запускаем режим Сюжет!");
 });
 
