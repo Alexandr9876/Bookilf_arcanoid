@@ -3,88 +3,62 @@ const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 document.body.appendChild(canvas);
 
-// --- Переменные ---
-let storyHitCount = 0;
-let storyTargetX, storyTargetY;
-let storyPaddleX;
-const storyPaddleWidth = 50;
-let storyHitRegistered = false;
+const FIELD_WIDTH = 300;
+const FIELD_HEIGHT = 500;
+canvas.width = FIELD_WIDTH;
+canvas.height = FIELD_HEIGHT;
 
-let maleX, maleY, maleDx;
-let femaleX, femaleY, femaleDx;
-let maleSymbolY, femaleSymbolY, maleSymbolDy, femaleSymbolDy;
+canvas.style.position = "absolute";
+canvas.style.left = "50%";
+canvas.style.top = "50%";
+canvas.style.transform = "translate(-50%, -50%)";
+canvas.style.background = "#222";
+canvas.style.touchAction = "none";
 
-let paddleWidth, paddleHeight = 10;
-let paddleX;
+// --- Летающие смайлики в меню ---
+let maleX = 50, maleY = canvas.height - 50, maleDx = 2;
+let femaleX = 250, femaleY = canvas.height - 50, femaleDx = -2;
 
+// --- Вертикально летающие символы пола ---
+let maleSymbolY = canvas.height - 100;
+let femaleSymbolY = canvas.height - 150;
+let maleSymbolDy = 1.2;
+let femaleSymbolDy = 1.5;
+
+// --- Платформа ---
+let paddleWidth = canvas.width * 0.25;
+const paddleHeight = 10;
+let paddleX = (canvas.width - paddleWidth) / 2;
+
+// --- Шарик ---
 const ballRadius = 10;
-let ballX, ballY, dx = 3, dy = -3;
+let ballX = canvas.width / 2;
+let ballY = canvas.height - 60;
+let dx = 3;
+let dy = -3;
 
+// --- Счет ---
 let score = 0;
+
+// --- Состояние игры ---
 let gameState = "menu"; // menu, playing, story1, popup
 
+// --- Кирпичи ---
 const brickRowCount = 4;
 const brickColumnCount = 6;
 const brickPadding = 5;
 const brickOffsetTop = 40;
-let brickWidth, brickHeight = 25;
+const brickOffsetLeft = 20;
+const brickWidth = (canvas.width - 40) / brickColumnCount;
+const brickHeight = 25;
 let bricks = [];
 
-let popupMessage = "";
-let popupButtons = [];
-
-// --- Переменные для "поцелуя" ---
-let kissX, kissY, kdx, kdy;
-let dodgeCount = 0;
-let targetDodging = false;
-
-// --- Resize Canvas ---
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    // Сюжетный уровень
-    storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
-    storyTargetX = canvas.width / 2;
-    storyTargetY = canvas.height / 4;
-
-    // Поцелуй
-    kissX = canvas.width / 2;
-    kissY = canvas.height - 60;
-    kdx = 9;
-    kdy = -9;
-    dodgeCount = 0;
-    targetDodging = false;
-
-    // Меню
-    maleX = 50; maleY = canvas.height - 50; maleDx = 2;
-    femaleX = 250; femaleY = canvas.height - 50; femaleDx = -2;
-    maleSymbolY = canvas.height - 100; femaleSymbolY = canvas.height - 150;
-    maleSymbolDy = 1.2; femaleSymbolDy = 1.5;
-
-    // Платформа
-    paddleWidth = canvas.width * 0.25;
-    paddleX = (canvas.width - paddleWidth) / 2;
-
-    // Шарик
-    ballX = canvas.width / 2;
-    ballY = canvas.height - 60;
-
-    // Кирпичи
-    brickWidth = (canvas.width - 40) / brickColumnCount;
-    createBricks();
-}
-
-window.addEventListener("load", resizeCanvas);
-window.addEventListener("resize", resizeCanvas);
-window.addEventListener("orientationchange", resizeCanvas);
-
-// --- Кирпичи ---
 function createBricks() {
     bricks = [];
+
     const totalWidth = brickColumnCount * (brickWidth + brickPadding) - brickPadding;
-    const offsetX = (canvas.width - totalWidth) / 2;
-    const offsetY = brickOffsetTop;
+    const offsetX = (canvas.width - totalWidth) / 2; // центрирование по ширине
+    const offsetY = 60; // отступ сверху
 
     for (let c = 0; c < brickColumnCount; c++) {
         bricks[c] = [];
@@ -96,11 +70,25 @@ function createBricks() {
     }
 }
 
+
+// --- Сюжетный уровень ---
+let storyHitCount = 0;
+let storyTargetX = canvas.width / 2;
+let storyTargetY = 100;
+let storyPaddleX = canvas.width / 2 - 25;
+const storyPaddleWidth = 50;
+let storyHitRegistered = false;
+
+// --- Поп-ап ---
+let popupMessage = "";
+let popupButtons = [];
+
 // --- Игровые функции ---
 function startGame() {
     ballX = canvas.width / 2;
     ballY = canvas.height - 60;
-    dx = 3; dy = -3;
+    dx = 3;
+    dy = -3;
     paddleX = (canvas.width - paddleWidth) / 2;
     score = 0;
     createBricks();
@@ -109,14 +97,15 @@ function startGame() {
 
 function startStoryLevel1() {
     storyHitCount = 0;
+    storyTargetX = canvas.width / 2;
     storyHitRegistered = false;
     storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
-    dodgeCount = 0;
-    targetDodging = false;
+    storyDodgeCount = 0;
 
     kissX = canvas.width / 2;
     kissY = canvas.height - 60;
 
+    // ✅ добавляем скорость поцелуя (3 раза быстрее обычного шара)
     const kSpeed = 9;
     const kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6;
     kdx = kSpeed * Math.cos(kAngle);
@@ -125,23 +114,24 @@ function startStoryLevel1() {
     gameState = "story1";
 }
 
+
 // --- Рисование ---
 function drawBall() {
-    ctx.font = "28px 'Segoe UI Emoji', sans-serif";
+    ctx.font = "28px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("🍌", ballX, ballY);
 }
 
 function drawPaddle() {
-    ctx.font = "36px 'Segoe UI Emoji', sans-serif";
+   ctx.font = "36px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("🍆", paddleX + paddleWidth / 2, canvas.height - 30);
 }
 
 function drawBricks() {
     const totalWidth = brickColumnCount * (brickWidth + brickPadding) - brickPadding;
-    const offsetX = (canvas.width - totalWidth) / 2;
+    const offsetX = (canvas.width - totalWidth) / 2; // центрируем
 
     for (let c = 0; c < brickColumnCount; c++) {
         for (let r = 0; r < brickRowCount; r++) {
@@ -149,14 +139,16 @@ function drawBricks() {
             if (b.status === 1) {
                 const brickX = offsetX + c * (brickWidth + brickPadding);
                 const brickY = brickOffsetTop + r * (brickHeight + brickPadding);
-                b.x = brickX; b.y = brickY;
-                ctx.font = "28px 'Segoe UI Emoji', sans-serif";
+                b.x = brickX;
+                b.y = brickY;
+                ctx.font = "28px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
                 ctx.textAlign = "center";
                 ctx.fillText("🍑", brickX + brickWidth / 2, brickY + brickHeight / 2);
             }
         }
     }
 }
+
 
 function drawScore() {
     ctx.font = "18px Arial";
@@ -177,8 +169,8 @@ function collisionDetection() {
                 score++;
                 if (score === brickRowCount * brickColumnCount) {
                     showPopup("🎉 Гигант! 🍆🍌🍑", [
-                        { text: "Еееще...", action: startGame, color: "#4CAF50" },
-                        { text: "Я спать", action: () => gameState = "menu", color: "#f44336" }
+                        {text:"Еееще...", action:startGame, color:"#4CAF50"},
+                        {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
                     ]);
                 }
             }
@@ -229,12 +221,31 @@ function drawMenu() {
     drawButton("Играть", canvas.width/2-70, btnY1, 140, 40, "#4CAF50");
     drawButton("Сюжет", canvas.width/2-70, btnY2, 140, 40, "#f44336");
 
+    ctx.font = "28px 'Segoe UI Emoji', Arial";
+    ctx.fillText("🛏️", canvas.width/2 - 100, btnY1 + 20);
+    ctx.fillText("🛏️", canvas.width/2 + 100, btnY1 + 20);
+    ctx.fillText("🛏️", canvas.width/2 - 100, btnY2 + 20);
+    ctx.fillText("🛏️", canvas.width/2 + 100, btnY2 + 20);
+
     ctx.font = "32px 'Segoe UI Emoji', Arial";
     ctx.fillText("👨", maleX, maleY);
     ctx.fillText("👩", femaleX, femaleY);
     maleX += maleDx; if(maleX<20||maleX>canvas.width-20) maleDx=-maleDx;
     femaleX += femaleDx; if(femaleX<20||femaleX>canvas.width-20) femaleDx=-femaleDx;
     canvas.menuButtonY1=btnY1; canvas.menuButtonY2=btnY2;
+
+        // --- Вертикально движущиеся символы пола ---
+    ctx.font = "28px 'Segoe UI Emoji', Arial";
+    ctx.fillText("♂️", canvas.width / 2 - 40, maleSymbolY);
+    ctx.fillText("♀️", canvas.width / 2 + 40, femaleSymbolY);
+
+    // --- Движение вверх-вниз ---
+    maleSymbolY += maleSymbolDy;
+    femaleSymbolY += femaleSymbolDy;
+
+    if (maleSymbolY > canvas.height - 40 || maleSymbolY < canvas.height - 120) maleSymbolDy = -maleSymbolDy;
+    if (femaleSymbolY > canvas.height - 60 || femaleSymbolY < canvas.height - 140) femaleSymbolDy = -femaleSymbolDy;
+
 }
 
 // --- Поп-ап ---
@@ -244,50 +255,55 @@ function showPopup(message, buttons) {
     gameState = "popup";
 }
 
-// --- Сюжетный уровень ---
+// --- Сюжетный уровень: переменные для "поцелуя"
+let kissX = canvas.width / 2;
+let kissY = canvas.height - 60;
+let kdx = 9; // в 3 раза быстрее
+let kdy = -9;
+let dodgeCount = 0;
+let targetDodging = false;
+
 function drawStoryLevel1() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // --- Платформа (смайлик в очках) ---
     ctx.font = "28px 'Segoe UI Emoji', Arial";
     ctx.textAlign = "center";
     ctx.fillText("😎", storyPaddleX + storyPaddleWidth / 2, canvas.height - 30);
 
-    const paddleRect = {
-        x: storyPaddleX,
-        y: canvas.height - 30 - 14,
-        w: storyPaddleWidth,
-        h: 28
-    };
-
+    // --- Поцелуй (мяч) ---
+    ctx.font = "28px 'Segoe UI Emoji', Arial";
     ctx.fillText("💋", kissX, kissY);
-    ctx.font = "56px 'Segoe UI Emoji', Arial";
+
+    // --- Грустный/смущённый смайлик ---
+    ctx.font = "56px 'Segoe UI Emoji', Arial"; // крупнее в 2 раза
     ctx.fillText(dodgeCount < 3 ? "👧" : "💖", storyTargetX, storyTargetY);
 
-    if (kissX + kdx > canvas.width - 14 || kissX + kdx < 14) kdx = -kdx;
-    if (kissY + kdy < 14) kdy = -kdy;
-
-    const kissRect = { x: kissX - 14, y: kissY - 14, w: 28, h: 28 };
-    if (rectsOverlap(kissRect.x, kissRect.y, kissRect.w, kissRect.h,
-                     paddleRect.x, paddleRect.y, paddleRect.w, paddleRect.h)) {
-        kdy = -kdy;
-        kissY = paddleRect.y - kissRect.h / 2 - 1;
-    }
-
-    if (kissY > canvas.height - 14) {
-        showPopup("Подкат провелен 💔", [
-            {text:"Ещё раз", action:startStoryLevel1, color:"#4CAF50"},
-            {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
-        ]);
-        return;
+    // --- Движение поцелуя ---
+    if (kissX + kdx > canvas.width - 10 || kissX + kdx < 10) kdx = -kdx;
+    if (kissY + kdy < 10) kdy = -kdy;
+    else if (kissY + kdy > canvas.height - 60) {
+        if (kissX > storyPaddleX && kissX < storyPaddleX + storyPaddleWidth) {
+            kdy = -kdy;
+        } else {
+            // поцелуй упал
+            showPopup("Игра окончена 💔", [
+                {text:"Ещё раз", action:startStoryLevel1, color:"#4CAF50"},
+                {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
+            ]);
+            return;
+        }
     }
 
     kissX += kdx;
     kissY += kdy;
 
+    // --- Проверяем, летит ли поцелуй прямо в грустного ---
     const dxToTarget = storyTargetX - kissX;
     const dyToTarget = storyTargetY - kissY;
     const distance = Math.sqrt(dxToTarget*dxToTarget + dyToTarget*dyToTarget);
 
+    // если поцелуй близко летит к цели — увернуться
     if (distance < 60 && dodgeCount < 3 && !targetDodging) {
         storyTargetX = Math.random() * (canvas.width - 80) + 40;
         storyTargetY = Math.random() * (canvas.height / 2 - 80) + 40;
@@ -296,6 +312,7 @@ function drawStoryLevel1() {
         setTimeout(()=> targetDodging = false, 800);
     }
 
+    // --- Когда после 3 уворотов попал ---
     if (distance < 50 && dodgeCount >= 3) {
         showPopup("Первый шаг — сделан 💞", [
             {text:"Продолжить", action:startStoryLevel1, color:"#4CAF50"},
@@ -304,12 +321,8 @@ function drawStoryLevel1() {
     }
 }
 
-// --- Проверка пересечения прямоугольников ---
-function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2){
-    return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
-}
 
-// --- Обработчик кликов/касаний ---
+// --- Обработчик касаний и кликов ---
 function handlePointer(e){
     e.preventDefault();
     const rect = canvas.getBoundingClientRect();
@@ -334,6 +347,7 @@ function handlePointer(e){
 canvas.addEventListener("click", handlePointer);
 canvas.addEventListener("touchstart", handlePointer);
 
+// --- Свайп ---
 canvas.addEventListener("touchmove", e=>{
     e.preventDefault();
     const touch=e.touches[0];
