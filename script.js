@@ -11,6 +11,22 @@ document.body.style.padding = 0;
 document.body.style.overflow = "hidden";
 document.body.appendChild(canvas);
 
+// --- Блокировка масштабирования и скролла на мобильных ---
+document.addEventListener("gesturestart", e => e.preventDefault());
+document.addEventListener("gesturechange", e => e.preventDefault());
+document.addEventListener("gestureend", e => e.preventDefault());
+
+document.addEventListener("touchmove", e => {
+    if (e.scale !== 1) e.preventDefault();
+}, { passive: false });
+
+let lastTouchEnd = 0;
+document.addEventListener("touchend", e => {
+    const now = new Date().getTime();
+    if (now - lastTouchEnd <= 300) e.preventDefault(); // блок двойного тапа
+    lastTouchEnd = now;
+}, false);
+
 // --- Переменные ---
 let gameState = "menu";
 let maleX = 50, maleY = 0, maleDx = 2;
@@ -254,4 +270,5 @@ function draw() {
 
 // --- Запуск ---
 draw();
+
 
