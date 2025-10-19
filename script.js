@@ -1,5 +1,7 @@
 const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
+document.body.style.margin = "0";
+document.body.style.overflow = "hidden";
 document.body.appendChild(canvas);
 
 let gameState = "menu";
@@ -52,6 +54,8 @@ function startGame(){
     score = 0;
     dx=3; dy=-3;
     createBricks();
+    ballX = canvas.width/2;
+    ballY = canvas.height-60;
     gameState="playing";
 }
 
@@ -80,6 +84,7 @@ function drawMenu(){
     ctx.font="48px 'Segoe UI Emoji', Arial";
     ctx.fillText("👨",maleX,maleY);
     ctx.fillText("👩",femaleX,femaleY);
+
     maleX+=maleDx; if(maleX<20||maleX>canvas.width-20) maleDx=-maleDx;
     femaleX+=femaleDx; if(femaleX<20||femaleX>canvas.width-20) femaleDx=-femaleDx;
 }
@@ -148,6 +153,7 @@ canvas.addEventListener("click", e=>{
     const rect=canvas.getBoundingClientRect();
     const x=e.clientX-rect.left;
     const y=e.clientY-rect.top;
+
     if(gameState==="menu"){
         if(x>=canvas.width/2-70 && x<=canvas.width/2+70){
             if(y>=200 && y<=250) startGame();
@@ -163,6 +169,7 @@ canvas.addEventListener("click", e=>{
 
 function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
+
     if(gameState==="menu") drawMenu();
     else if(gameState==="playing"){
         drawBricks();
@@ -184,6 +191,7 @@ function draw(){
                 ]);
             }
         }
+
         ballX+=dx;
         ballY+=dy;
     }
@@ -195,6 +203,7 @@ function draw(){
         ctx.font="22px Arial";
         ctx.textAlign="center";
         ctx.fillText(popupMessage,canvas.width/2,canvas.height/2-60);
+
         const bw=140,bh=40;
         popupButtons.forEach((btn,i)=>{
             const bx=canvas.width/2-bw/2, by=canvas.height/2+i*60;
