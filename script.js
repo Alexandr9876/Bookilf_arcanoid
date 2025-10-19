@@ -3,10 +3,44 @@ const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 document.body.appendChild(canvas);
 
-const FIELD_WIDTH = 300;
-const FIELD_HEIGHT = 500;
-canvas.width = FIELD_WIDTH;
-canvas.height = FIELD_HEIGHT;
+// --- Сюжетный уровень ---
+let storyHitCount = 0;
+let storyTargetX = canvas.width / 2;
+let storyTargetY = 100;
+let storyPaddleX = canvas.width / 2 - 25;
+const storyPaddleWidth = 50;
+let storyHitRegistered = false;
+
+// --- Настраиваем canvas под устройство ---
+function resizeCanvas() {
+    const aspectRatio = 9 / 16; // соотношение сторон (ширина / высота)
+
+    if (/Mobi|Android/i.test(navigator.userAgent)) {
+        // --- Смартфон: на весь экран ---
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    } else {
+        // --- Компьютер: высота = окно, ширина по пропорции ---
+        canvas.height = window.innerHeight;
+        canvas.width = canvas.height * aspectRatio;
+
+        // Центрируем по горизонтали
+        canvas.style.display = "block";
+        canvas.style.margin = "0 auto";
+    }
+
+    // Обновляем позиции объектов при изменении размера
+    storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
+    storyTargetX = canvas.width / 2;
+    storyTargetY = canvas.height / 4;
+    kissX = canvas.width / 2;
+    kissY = canvas.height / 2;
+}
+
+// Вызываем при загрузке и изменении ориентации
+window.addEventListener("resize", resizeCanvas);
+window.addEventListener("orientationchange", resizeCanvas);
+window.addEventListener("load", resizeCanvas);
 
 canvas.style.position = "absolute";
 canvas.style.left = "50%";
@@ -70,14 +104,6 @@ function createBricks() {
     }
 }
 
-
-// --- Сюжетный уровень ---
-let storyHitCount = 0;
-let storyTargetX = canvas.width / 2;
-let storyTargetY = 100;
-let storyPaddleX = canvas.width / 2 - 25;
-const storyPaddleWidth = 50;
-let storyHitRegistered = false;
 
 // --- Поп-ап ---
 let popupMessage = "";
@@ -426,5 +452,3 @@ function draw(){
 }
 
 draw();
-
-
