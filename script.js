@@ -1,12 +1,10 @@
-// script.js
-
 // --- Canvas ---
 const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 document.body.appendChild(canvas);
 
 // --- Глобальные переменные ---
-let gameState = "menu"; // menu, playing, story1, popup
+let gameState = "menu"; // menu, playing, popup
 let score = 0;
 let lives = 3;
 
@@ -27,15 +25,6 @@ let brickWidth = 0;
 const brickHeight = 25;
 const brickPadding = 5;
 
-// --- Сюжет ---
-let storyLevel = 1;
-let storyDodgeCount = 0;
-let storyTargetX = 0, storyTargetY = 100;
-let storyPaddleX = 0;
-let kissX = 0, kissY = 0;
-let kdx = 5, kdy = -5;
-let targetDodging = false;
-
 // --- Попап ---
 let popupMessage = "";
 let popupButtons = [];
@@ -50,15 +39,11 @@ function resizeCanvas() {
     ballY = canvas.height - 60;
     maleY = canvas.height - 50;
     femaleY = canvas.height - 50;
-    storyPaddleX = canvas.width / 2 - 50 / 2;
-    storyTargetX = canvas.width / 2;
-    storyTargetY = canvas.height / 4;
-    kissX = canvas.width / 2;
-    kissY = canvas.height - 60;
     brickWidth = Math.max((canvas.width - 40) / brickColumnCount, 30);
     createBricks();
 }
 
+// --- Создание блоков ---
 function createBricks() {
     bricks = [];
     const offsetX = (canvas.width - (brickWidth + brickPadding) * brickColumnCount + brickPadding) / 2;
@@ -82,31 +67,20 @@ function startGame() {
     gameState = "playing";
 }
 
-function startStoryLevel1() {
-    storyDodgeCount = 0;
-    storyLevel = 1;
-    kissX = canvas.width / 2;
-    kissY = canvas.height - 60;
-    kdx = 5; kdy = -5;
-    gameState = "story1";
-    showPopup("У... Какая красотка!", [{ text: "Начать", action: () => gameState = "story1" }]);
-}
-
-// --- Отрисовка ---
+// --- Меню ---
 function drawMenu() {
     ctx.fillStyle = "#111";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Заголовок
     ctx.font = "36px 'Segoe UI Emoji', Arial";
     ctx.textAlign = "center";
+    ctx.fillStyle = "#fff";
     ctx.fillText("🍑 Бананоид 🍌", canvas.width/2, 80);
 
-    // Кнопки
     drawButton("Играть", canvas.width/2-70, 200, 140, 50, "#4CAF50");
     drawButton("Сюжет", canvas.width/2-70, 270, 140, 50, "#f44336");
 
-    // Движущиеся смайлики
+    // Движущиеся смайлики пола
     ctx.font = "48px 'Segoe UI Emoji', Arial";
     ctx.fillText("👨", maleX, maleY);
     ctx.fillText("👩", femaleX, femaleY);
@@ -176,14 +150,33 @@ function collisionDetection() {
     }
 }
 
-// --- Попапы ---
+// --- Попап ---
 function showPopup(message, buttons) {
     popupMessage = message;
     popupButtons = buttons.map(b => ({...b}));
     gameState = "popup";
 }
 
-// --- Обработчик кликов ---
+// --- Управление платформой ---
+canvas.addEventListener("mousemove", e => {
+    if(gameState === "playing"){
+        const rect = canvas.getBoundingClientRect();
+        paddleX = e.clientX - rect.left - paddleWidth/2;
+        if(paddleX < 0) paddleX = 0;
+        if(paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
+    }
+});
+canvas.addEventListener("touchmove", e => {
+    if(gameState === "playing"){
+        const rect = canvas.getBoundingClientRect();
+        paddleX = e.touches[0].clientX - rect.left - paddleWidth/2;
+        if(paddleX < 0) paddleX = 0;
+        if(paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
+    }
+    e.preventDefault();
+}, {passive:false});
+
+// --- Клик по меню/попап ---
 canvas.addEventListener("click", e => {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -231,8 +224,6 @@ function draw() {
 
         ballX += dx;
         ballY += dy;
-    } else if(gameState === "story1") {
-        // TODO: добавить логику сюжетного уровня с уворачивающейся девушкой
     }
 
     if(gameState==="popup"){
