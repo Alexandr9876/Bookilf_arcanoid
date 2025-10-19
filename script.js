@@ -2,18 +2,19 @@
 const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 
-// Стили, чтобы canvas занимал весь экран и был зафиксирован
+// Canvas на весь экран
 canvas.style.position = "fixed";
 canvas.style.top = 0;
 canvas.style.left = 0;
-canvas.style.width = "100%";
-canvas.style.height = "100%";
 canvas.style.display = "block";
 document.body.style.margin = 0;
 document.body.style.padding = 0;
 document.body.style.overflow = "hidden";
-
 document.body.appendChild(canvas);
+
+// --- Meta viewport ---
+// Для мобильных устройств нужно добавить в <head> HTML:
+// <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 // --- Переменные ---
 let gameState = "menu";
