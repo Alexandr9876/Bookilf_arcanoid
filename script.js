@@ -27,10 +27,7 @@ function resizeCanvas() {
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-// --- Универсальный размер текста для кнопок ---
-const BUTTON_FONT_SIZE = 36;
-
-// --- Бюстгальтер ---
+// --- Бюстгальтер реалистичный ---
 function drawButtonBra(x, y, w, h, color, text) {
     ctx.fillStyle = color;
 
@@ -54,9 +51,19 @@ function drawButtonBra(x, y, w, h, color, text) {
     ctx.strokeStyle = color;
     ctx.stroke();
 
+    // Шлейки
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x + w*0.25, y + h*0.4);
+    ctx.lineTo(x + w*0.25, y + h*0.15);
+    ctx.moveTo(x + w*0.75, y + h*0.4);
+    ctx.lineTo(x + w*0.75, y + h*0.15);
+    ctx.stroke();
+
     // Текст по центру чашек
     ctx.fillStyle = "#fff";
-    ctx.font = `${BUTTON_FONT_SIZE}px Arial`;
+    const fontSize = Math.floor(h / 3); // крупный одинаковый размер
+    ctx.font = `${fontSize}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(text, x + w/2, y + h*0.75);
@@ -84,7 +91,8 @@ function drawButtonStringPanties(x, y, w, h, color, text) {
 
     // Текст на резинке
     ctx.fillStyle = "#fff";
-    ctx.font = `${BUTTON_FONT_SIZE}px Arial`;
+    const fontSize = Math.floor(h / 3); // одинаковый размер текста
+    ctx.font = `${fontSize}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
     ctx.fillText(text, x + w/2, y + h*0.05);
@@ -102,8 +110,8 @@ function drawMenu() {
     ctx.fillText("🍑 Бананоид 🍌", canvas.width/2, canvas.height*0.15);
 
     // Кнопки
-    drawButtonBra(canvas.width/2 - 100, canvas.height*0.3, 200, 100, "#4CAF50", "Играть");
-    drawButtonStringPanties(canvas.width/2 - 100, canvas.height*0.45, 200, 80, "#f44336", "Сюжет");
+    drawButtonBra(canvas.width/2 - 120, canvas.height*0.3, 240, 120, "#4CAF50", "Играть");
+    drawButtonStringPanties(canvas.width/2 - 100, canvas.height*0.5, 200, 80, "#f44336", "Сюжет");
 
     // Смайлики внизу
     ctx.font = "48px 'Segoe UI Emoji', Arial";
@@ -123,13 +131,13 @@ canvas.addEventListener("click", e => {
     const y = e.clientY;
 
     // Играть
-    if (x >= canvas.width/2 - 100 && x <= canvas.width/2 + 100 &&
-        y >= canvas.height*0.3 && y <= canvas.height*0.3 + 100)
+    if (x >= canvas.width/2 - 120 && x <= canvas.width/2 + 120 &&
+        y >= canvas.height*0.3 && y <= canvas.height*0.3 + 120)
         alert("Запускаем режим Арканоид!");
 
     // Сюжет
     if (x >= canvas.width/2 - 100 && x <= canvas.width/2 + 100 &&
-        y >= canvas.height*0.45 && y <= canvas.height*0.45 + 80)
+        y >= canvas.height*0.5 && y <= canvas.height*0.5 + 80)
         alert("Запускаем режим Сюжет!");
 });
 
