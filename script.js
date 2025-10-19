@@ -3,101 +3,87 @@ const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 document.body.appendChild(canvas);
 
-// --- Сюжетный уровень ---
+// --- Переменные ---
 let storyHitCount = 0;
-let storyTargetX = canvas.width / 2;
-let storyTargetY = 100;
-let storyPaddleX = canvas.width / 2 - 25;
+let storyTargetX, storyTargetY;
+let storyPaddleX;
 const storyPaddleWidth = 50;
 let storyHitRegistered = false;
 
-function resizeCanvas() {
-    // Используем реальные размеры видимой области
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+let maleX, maleY, maleDx;
+let femaleX, femaleY, femaleDx;
+let maleSymbolY, femaleSymbolY, maleSymbolDy, femaleSymbolDy;
 
-    // Устанавливаем размер canvas
-    canvas.width = width;
-    canvas.height = height;
+let paddleWidth, paddleHeight = 10;
+let paddleX;
 
-    // Настройки для растяжения на весь экран
-    Object.assign(canvas.style, {
-        position: "fixed",
-        left: "0",
-        top: "0",
-        margin: "0",
-        padding: "0",
-        width: "100vw",
-        height: "100vh",
-        background: "#222",
-        touchAction: "none",
-        display: "block",
-        overflow: "hidden"
-    });
-
-    // Пересчитываем объекты под новый размер
-    storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
-    storyTargetX = canvas.width / 2;
-    storyTargetY = canvas.height / 4;
-    kissX = canvas.width / 2;
-    kissY = canvas.height / 2;
-
-    paddleWidth = canvas.width * 0.25;
-    brickWidth = (canvas.width - 40) / brickColumnCount;
-
-    createBricks();
-}
-
-// Перерисовываем при загрузке и изменении ориентации
-window.addEventListener("load", resizeCanvas);
-window.addEventListener("resize", resizeCanvas);
-window.addEventListener("orientationchange", resizeCanvas);
-
-
-// --- Летающие смайлики в меню ---
-let maleX = 50, maleY = canvas.height - 50, maleDx = 2;
-let femaleX = 250, femaleY = canvas.height - 50, femaleDx = -2;
-
-// --- Вертикально летающие символы пола ---
-let maleSymbolY = canvas.height - 100;
-let femaleSymbolY = canvas.height - 150;
-let maleSymbolDy = 1.2;
-let femaleSymbolDy = 1.5;
-
-// --- Платформа ---
-let paddleWidth = canvas.width * 0.25;
-const paddleHeight = 10;
-let paddleX = (canvas.width - paddleWidth) / 2;
-
-// --- Шарик ---
 const ballRadius = 10;
-let ballX = canvas.width / 2;
-let ballY = canvas.height - 60;
-let dx = 3;
-let dy = -3;
+let ballX, ballY, dx = 3, dy = -3;
 
-// --- Счет ---
 let score = 0;
-
-// --- Состояние игры ---
 let gameState = "menu"; // menu, playing, story1, popup
 
-// --- Кирпичи ---
 const brickRowCount = 4;
 const brickColumnCount = 6;
 const brickPadding = 5;
 const brickOffsetTop = 40;
 const brickOffsetLeft = 20;
-const brickWidth = (canvas.width - 40) / brickColumnCount;
-const brickHeight = 25;
+let brickWidth, brickHeight = 25;
 let bricks = [];
 
+let popupMessage = "";
+let popupButtons = [];
+
+let kissX, kissY, kdx = 9, kdy = -9;
+let dodgeCount = 0;
+let targetDodging = false;
+
+// --- Resize Canvas ---
+function resizeCanvas() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    canvas.width = width;
+    canvas.height = height;
+
+    // Сюжетный уровень
+    storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
+    storyTargetX = canvas.width / 2;
+    storyTargetY = canvas.height / 4;
+
+    // Поцелуй
+    kissX = canvas.width / 2;
+    kissY = canvas.height / 2;
+
+    // Меню
+    maleX = 50; maleY = canvas.height - 50; maleDx = 2;
+    femaleX = 250; femaleY = canvas.height - 50; femaleDx = -2;
+    maleSymbolY = canvas.height - 100; femaleSymbolY = canvas.height - 150;
+    maleSymbolDy = 1.2; femaleSymbolDy = 1.5;
+
+    // Платформа
+    paddleWidth = canvas.width * 0.25;
+    paddleX = (canvas.width - paddleWidth) / 2;
+
+    // Шарик
+    ballX = canvas.width / 2;
+    ballY = canvas.height - 60;
+
+    // Кирпичи
+    brickWidth = (canvas.width - 40) / brickColumnCount;
+    createBricks();
+}
+
+window.addEventListener("load", resizeCanvas);
+window.addEventListener("resize", resizeCanvas);
+window.addEventListener("orientationchange", resizeCanvas);
+
+// --- Кирпичи ---
 function createBricks() {
     bricks = [];
-
     const totalWidth = brickColumnCount * (brickWidth + brickPadding) - brickPadding;
-    const offsetX = (canvas.width - totalWidth) / 2; // центрирование по ширине
-    const offsetY = 60; // отступ сверху
+    const offsetX = (canvas.width - totalWidth) / 2;
+    const offsetY = 60;
 
     for (let c = 0; c < brickColumnCount; c++) {
         bricks[c] = [];
@@ -109,17 +95,11 @@ function createBricks() {
     }
 }
 
-
-// --- Поп-ап ---
-let popupMessage = "";
-let popupButtons = [];
-
 // --- Игровые функции ---
 function startGame() {
     ballX = canvas.width / 2;
     ballY = canvas.height - 60;
-    dx = 3;
-    dy = -3;
+    dx = 3; dy = -3;
     paddleX = (canvas.width - paddleWidth) / 2;
     score = 0;
     createBricks();
@@ -128,15 +108,14 @@ function startGame() {
 
 function startStoryLevel1() {
     storyHitCount = 0;
-    storyTargetX = canvas.width / 2;
     storyHitRegistered = false;
     storyPaddleX = canvas.width / 2 - storyPaddleWidth / 2;
-    storyDodgeCount = 0;
+    dodgeCount = 0;
+    targetDodging = false;
 
     kissX = canvas.width / 2;
     kissY = canvas.height - 60;
 
-    // ✅ добавляем скорость поцелуя (3 раза быстрее обычного шара)
     const kSpeed = 9;
     const kAngle = (Math.random() * Math.PI / 3) - Math.PI / 6;
     kdx = kSpeed * Math.cos(kAngle);
@@ -145,24 +124,23 @@ function startStoryLevel1() {
     gameState = "story1";
 }
 
-
 // --- Рисование ---
 function drawBall() {
-    ctx.font = "28px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
+    ctx.font = "28px 'Segoe UI Emoji', sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("🍌", ballX, ballY);
 }
 
 function drawPaddle() {
-   ctx.font = "36px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
+    ctx.font = "36px 'Segoe UI Emoji', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("🍆", paddleX + paddleWidth / 2, canvas.height - 30);
 }
 
 function drawBricks() {
     const totalWidth = brickColumnCount * (brickWidth + brickPadding) - brickPadding;
-    const offsetX = (canvas.width - totalWidth) / 2; // центрируем
+    const offsetX = (canvas.width - totalWidth) / 2;
 
     for (let c = 0; c < brickColumnCount; c++) {
         for (let r = 0; r < brickRowCount; r++) {
@@ -170,16 +148,14 @@ function drawBricks() {
             if (b.status === 1) {
                 const brickX = offsetX + c * (brickWidth + brickPadding);
                 const brickY = brickOffsetTop + r * (brickHeight + brickPadding);
-                b.x = brickX;
-                b.y = brickY;
-                ctx.font = "28px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
+                b.x = brickX; b.y = brickY;
+                ctx.font = "28px 'Segoe UI Emoji', sans-serif";
                 ctx.textAlign = "center";
                 ctx.fillText("🍑", brickX + brickWidth / 2, brickY + brickHeight / 2);
             }
         }
     }
 }
-
 
 function drawScore() {
     ctx.font = "18px Arial";
@@ -200,13 +176,24 @@ function collisionDetection() {
                 score++;
                 if (score === brickRowCount * brickColumnCount) {
                     showPopup("🎉 Гигант! 🍆🍌🍑", [
-                        {text:"Еееще...", action:startGame, color:"#4CAF50"},
-                        {text:"Я спать", action:()=>gameState="menu", color:"#f44336"}
+                        { text: "Еееще...", action: startGame, color: "#4CAF50" },
+                        { text: "Я спать", action: () => gameState = "menu", color: "#f44336" }
                     ]);
                 }
             }
         }
     }
+}
+
+// --- Меню ---
+function drawButton(text, x, y, w, h, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, w, h);
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x + w / 2, y + h / 2);
 }
 
 // --- Меню ---
@@ -457,4 +444,5 @@ function draw(){
 }
 
 draw();
+
 
