@@ -60,10 +60,10 @@ let maleX = 50, maleY = canvas.height - 50, maleDx = 2;
 let femaleX = 250, femaleY = canvas.height - 50, femaleDx = -2;
 
 // --- Вертикально летающие символы пола ---
-let maleSymbolY = canvas.height - 100;
-let femaleSymbolY = canvas.height - 150;
-let maleSymbolDy = 1.2;
-let femaleSymbolDy = 1.5;
+let maleSymbolY = canvas.height - 60;
+let femaleSymbolY = canvas.height - 100;
+let maleSymbolDy = -1.2;
+let femaleSymbolDy = -1.5;
 
 // --- Платформа ---
 let paddleWidth = canvas.width * 0.25;
@@ -275,8 +275,8 @@ function drawMenu() {
     maleSymbolY += maleSymbolDy;
     femaleSymbolY += femaleSymbolDy;
 
-    if (maleSymbolY > canvas.height - 40 || maleSymbolY < canvas.height - 120) maleSymbolDy = -maleSymbolDy;
-    if (femaleSymbolY > canvas.height - 60 || femaleSymbolY < canvas.height - 140) femaleSymbolDy = -femaleSymbolDy;
+if (maleSymbolY < canvas.height - 140 || maleSymbolY > canvas.height - 40) maleSymbolDy = -maleSymbolDy;
+if (femaleSymbolY < canvas.height - 160 || femaleSymbolY > canvas.height - 60) femaleSymbolDy = -femaleSymbolDy;
 
 }
 
@@ -458,4 +458,5 @@ function draw(){
 }
 
 draw();
+
 
