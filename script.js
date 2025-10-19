@@ -299,10 +299,15 @@ function drawPlay() {
     });
 
     // падение шарика
-    if(ball.y > canvas.height) {
-        if (playLives > 1) showLoseLifePopup = true;
-        else showGameOverPopup = true;
+   if(ball.y > canvas.height) {
+    if (playLives > 1) {
+        showLoseLifePopup = true;
+        resetBallPaddle();
+    } else {
+        showGameOverPopup = true;
     }
+}
+
 
     // победа
     if(blocks.every(block => block.destroyed)) {
@@ -412,8 +417,11 @@ function drawWinPopup() {
     ctx.textAlign="center";
     ctx.fillText(level2Ready?"Ты проснулся. Пора сделать сон явью! Найдем тебе пару!":"Ты Гигант! 💪",canvas.width/2,y+50);
     ctx.fillStyle="#4CAF50"; ctx.fillRect(x+40,y+100,90,40); ctx.fillStyle="#fff"; ctx.fillText("Еще раз",x+85,y+120);
-    ctx.fillStyle
-="#f44336"; ctx.fillRect(x+170,y+100,90,40); ctx.fillStyle="#fff"; ctx.fillText("Выйти",x+215,y+120);
+    ctx.fillStyle = "#f44336"; 
+ctx.fillRect(x+170, y+100, 90, 40); 
+ctx.fillStyle = "#fff"; 
+ctx.fillText("Выйти", x+215, y+120);
+
 }
 
 function drawLoseLifePopup() {
@@ -553,3 +561,4 @@ canvas.addEventListener("click", e => {
         showLevel2Popup = false;
     }
 });
+
