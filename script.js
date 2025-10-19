@@ -156,7 +156,7 @@ function drawBall() {
 }
 
 function drawPaddle() {
-   ctx.font = "36px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
+   ctx.font = "108px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("🍆", paddleX + paddleWidth / 2, canvas.height - 30);
 }
@@ -458,5 +458,6 @@ function draw(){
 }
 
 draw();
+
 
 
