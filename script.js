@@ -173,8 +173,8 @@ ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const buttonTextSize = Math.floor(canvas.height * 0.06);
 
-    drawButtonBra(canvas.width/2 - 120, canvas.height*0.3, 240, 120, "#4CAF50", "Играть", buttonTextSize);
-    drawButtonStringPanties(canvas.width/2 - 100, canvas.height*0.5, 200, 80, "#f44336", "Сюжет", buttonTextSize);
+    drawButtonBra(canvas.width/2 - 120, canvas.height*0.3, 240, 120, "#4CAF50", "Отбананить", buttonTextSize);
+    drawButtonStringPanties(canvas.width/2 - 100, canvas.height*0.5, 200, 80, "#f44336", "История", buttonTextSize);
 
     ctx.font = "48px 'Segoe UI Emoji', Arial";
     ctx.fillText("👨", maleX, maleY);
@@ -394,6 +394,7 @@ function draw() {
 
 // --- Запуск ---
 draw();
+
 
 
 
