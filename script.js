@@ -32,15 +32,42 @@ function resizeCanvas() {
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-// --- Кнопки ---
-function drawButton(text, x, y, w, h, color) {
+// --- Кнопки в виде бюстгальтера ---
+function drawButtonBra(x, y, w, h, color, text) {
     ctx.fillStyle = color;
-    ctx.fillRect(x, y, w, h);
+    ctx.beginPath();
+    const radius = h / 2;
+    ctx.moveTo(x + radius, y);
+    ctx.arc(x + radius, y + radius, radius, Math.PI * 1.5, Math.PI * 0.5);
+    ctx.arc(x + w - radius, y + radius, radius, Math.PI * 1.5, Math.PI * 0.5);
+    ctx.closePath();
+    ctx.fill();
+
+    // Текст
     ctx.fillStyle = "#fff";
     ctx.font = `${Math.floor(h/2)}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(text, x + w / 2, y + h / 2);
+    ctx.fillText(text, x + w/2, y + h/2);
+}
+
+// --- Кнопки в виде трусиков ---
+function drawButtonPanties(x, y, w, h, color, text) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w*0.2, y + h);
+    ctx.lineTo(x + w*0.8, y + h);
+    ctx.lineTo(x + w, y);
+    ctx.closePath();
+    ctx.fill();
+
+    // Текст
+    ctx.fillStyle = "#fff";
+    ctx.font = `${Math.floor(h/2)}px Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x + w/2, y + h/2 - 5);
 }
 
 // --- Меню ---
@@ -55,8 +82,8 @@ function drawMenu() {
     ctx.fillText("🍑 Бананоид 🍌", canvas.width / 2, canvas.height * 0.15);
 
     // Кнопки
-    drawButton("Играть", canvas.width / 2 - 70, canvas.height * 0.35, 140, 50, "#4CAF50");
-    drawButton("Сюжет", canvas.width / 2 - 70, canvas.height * 0.45, 140, 50, "#f44336");
+    drawButtonBra(canvas.width / 2 - 100, canvas.height * 0.35, 200, 60, "#4CAF50", "Играть");
+    drawButtonPanties(canvas.width / 2 - 100, canvas.height * 0.45, 200, 60, "#f44336", "Сюжет");
 
     // Движущиеся смайлики внизу
     ctx.font = "48px 'Segoe UI Emoji', Arial";
@@ -75,12 +102,15 @@ canvas.addEventListener("click", e => {
     const x = e.clientX;
     const y = e.clientY;
 
-    if (x >= canvas.width / 2 - 70 && x <= canvas.width / 2 + 70) {
-        if (y >= canvas.height * 0.35 && y <= canvas.height * 0.35 + 50)
-            alert("Запускаем режим Арканоид!");
-        if (y >= canvas.height * 0.45 && y <= canvas.height * 0.45 + 50)
-            alert("Запускаем режим Сюжет!");
-    }
+    // Играть (бюстгальтер)
+    if (x >= canvas.width / 2 - 100 && x <= canvas.width / 2 + 100 &&
+        y >= canvas.height * 0.35 && y <= canvas.height * 0.35 + 60)
+        alert("Запускаем режим Арканоид!");
+
+    // Сюжет (трусики)
+    if (x >= canvas.width / 2 - 100 && x <= canvas.width / 2 + 100 &&
+        y >= canvas.height * 0.45 && y <= canvas.height * 0.45 + 60)
+        alert("Запускаем режим Сюжет!");
 });
 
 // --- Главный цикл ---
