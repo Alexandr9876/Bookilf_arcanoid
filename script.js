@@ -550,6 +550,197 @@ function startStory() {
     gameState = "story";
 }
 
+// --- СЮЖЕТНЫЙ РЕЖИМ ---
+let storyLevel = 0;
+let storyPopup = null;
+let storyLives = 3;
+let storyBlocks = [];
+let storyBall = {};
+let storyPaddle = {};
+let storyMessage = "";
+let storyStarted = false;
+
+// Универсальный попап
+function drawStoryPopup(text, buttons) {
+    const w = 400, h = 220;
+    const x = canvas.width/2 - w/2;
+    const y = canvas.height/2 - h/2;
+
+    ctx.fillStyle = "rgba(0,0,0,0.8)";
+    ctx.fillRect(x, y, w, h);
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "22px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(text, canvas.width/2, y + 70);
+
+    buttons.forEach((btn, i) => {
+        const bx = x + 60 + i * 160;
+        const by = y + 130;
+        ctx.fillStyle = btn.color;
+        ctx.fillRect(bx, by, 120, 50);
+        ctx.fillStyle = "#fff";
+        ctx.fillText(btn.text, bx + 60, by + 30);
+        btn.area = {x: bx, y: by, w: 120, h: 50};
+    });
+
+    storyPopup = {buttons};
+}
+
+// --- Обработчик кликов для сюжета ---
+canvas.addEventListener("click", e => {
+    if (gameState !== "story" || !storyPopup) return;
+
+    const { clientX: x, clientY: y } = e;
+    storyPopup.buttons.forEach(btn => {
+        if (x >= btn.area.x && x <= btn.area.x + btn.area.w &&
+            y >= btn.area.y && y <= btn.area.y + btn.area.h) {
+            btn.onClick();
+        }
+    });
+});
+
+// --- Запуск сюжета ---
+function startStory() {
+    gameState = "story";
+    storyLevel = 0;
+    storyStarted = false;
+    drawStoryIntro();
+}
+
+function drawStoryIntro() {
+    drawStoryPopup("У... Какая красотка!", [
+        {text:"Начать", color:"#4CAF50", onClick:()=>startStoryLevel(1)}
+    ]);
+}
+
+// --- Запуск конкретного уровня ---
+function startStoryLevel(lvl) {
+    storyPopup = null;
+    storyLevel = lvl;
+    storyLives = 3;
+    storyStarted = true;
+
+    // Настройки уровня
+    const levels = {
+        1: {block:"👩", paddle:"👨", ball:"🌹"},
+        2: {block:"❤️", paddle:"📱", ball:"❓"},
+        3: {block:"🍕", paddle:"🍳", ball:"👨‍🍳"},
+        4: {block:"❤️", paddle:"🎁", ball:"🍬"},
+        5: {block:"👩", paddle:"👨", ball:"💋"}
+    };
+
+    const setup = levels[lvl];
+    storyBlocks = [];
+    const cols = 7;
+    const rows = 3;
+    const spacing = 10;
+    const size = 40;
+    const startX = (canvas.width - (cols * size + (cols - 1)*spacing)) / 2;
+    const startY = 100;
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            storyBlocks.push({x: startX + c*(size+spacing), y: startY + r*(size+spacing), size, destroyed:false});
+        }
+    }
+
+    storyBall = {x: canvas.width/2, y: canvas.height/2, dx: 4, dy: -4, size: 30, emoji: setup.ball};
+    storyPaddle = {x: canvas.width/2 - 50, y: canvas.height - 60, width: 100, height: 30, emoji: setup.paddle};
+    storyMessage = setup.block;
+}
+
+// --- Отрисовка сюжета ---
+function drawStory() {
+    // фон
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, "#ff9eb5");
+    gradient.addColorStop(1, "#ffd6a5");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    drawBedBackground();
+
+    if (!storyStarted && !storyPopup) return drawStoryIntro();
+
+    // рисуем блоки
+    ctx.font = "40px 'Segoe UI Emoji'";
+    storyBlocks.forEach(b => { if (!b.destroyed) ctx.fillText(storyMessage, b.x, b.y); });
+
+    // шарик
+    ctx.font = "32px 'Segoe UI Emoji'";
+    ctx.fillText(storyBall.emoji, storyBall.x, storyBall.y);
+
+    // платформа
+    ctx.font = "48px 'Segoe UI Emoji'";
+    ctx.fillText(storyPaddle.emoji, storyPaddle.x, storyPaddle.y);
+
+    // движение
+    storyBall.x += storyBall.dx;
+    storyBall.y += storyBall.dy;
+
+    if(storyBall.x < 0 || storyBall.x > canvas.width - storyBall.size) storyBall.dx = -storyBall.dx;
+    if(storyBall.y < 0) storyBall.dy = -storyBall.dy;
+
+    // столкновение с платформой
+    if(storyBall.y + storyBall.size >= storyPaddle.y - 40 &&
+       storyBall.x > storyPaddle.x && storyBall.x < storyPaddle.x + storyPaddle.width) {
+        storyBall.dy = -storyBall.dy;
+    }
+
+    // столкновения с блоками
+    storyBlocks.forEach(b => {
+        if(!b.destroyed &&
+           storyBall.x + storyBall.size > b.x &&
+           storyBall.x < b.x + b.size &&
+           storyBall.y + storyBall.size > b.y &&
+           storyBall.y < b.y + b.size) {
+            b.destroyed = true;
+            storyBall.dy = -storyBall.dy;
+        }
+    });
+
+    // проигрыш
+    if(storyBall.y > canvas.height) {
+        storyLives--;
+        if(storyLives > 0) {
+            storyBall.x = canvas.width/2;
+            storyBall.y = canvas.height/2;
+            storyBall.dy = -4;
+        } else {
+            drawStoryPopup("Ты проиграл 💔", [
+                {text:"Выйти", color:"#f44336", onClick:()=>{gameState="menu"; storyStarted=false;}},
+                {text:"Заново", color:"#4CAF50", onClick:()=>startStoryLevel(storyLevel)}
+            ]);
+        }
+    }
+
+    // победа
+    if(storyBlocks.every(b=>b.destroyed) && !storyPopup) {
+        let text="", next=null;
+        switch(storyLevel){
+            case 1: text="Первый шаг сделан 💐"; next=2; break;
+            case 2: text="Она согласилась на свидание 💬"; next=3; break;
+            case 3: text="Свидание прошло успешно 🍷"; next=4; break;
+            case 4: text="Она влюблена ❤️"; next=5; break;
+            case 5: text="Пора действовать 💋"; next=null; break;
+        }
+        const btns = [
+            {text:"Продолжить", color:"#4CAF50", onClick:()=>{
+                if(next) startStoryLevel(next);
+                else { gameState="menu"; storyStarted=false; }
+            }},
+            {text:"Выйти", color:"#f44336", onClick:()=>{
+                gameState="menu"; storyStarted=false;
+            }}
+        ];
+        drawStoryPopup(text, btns);
+    }
+
+    // попап
+    if (storyPopup) drawStoryPopup(storyPopup.text, storyPopup.buttons);
+}
+
 // --- Главный цикл ---
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -570,3 +761,4 @@ function draw() {
 
 // --- Запуск ---
 draw();
+
