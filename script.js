@@ -276,11 +276,15 @@ if (blocks.every(block => block.destroyed)) {
     ctx.textBaseline = "top"; // вернуть обратно для остальных элементов
 
 
-    // счетчик и жизни
+   // счетчик и жизни
 ctx.font = "24px Arial";
 ctx.fillStyle = "#000000"; // черный цвет
 ctx.fillText(`Обананено персичков: ${playScore}`, 20, 40);
-ctx.fillText(`Таблеток Виагра: ${playLives}`, 20, 70);
+
+// 💊 показываем жизни смайликами
+ctx.font = "28px 'Segoe UI Emoji', Arial";
+ctx.fillText("💊".repeat(playLives), 20, 70);
+
 
 
     // движение шарика
@@ -317,7 +321,7 @@ if(ball.y + ball.size >= paddle.y - paddle.height*3 &&
    // проверка падения шарика
 if(ball.y > canvas.height) {
     if (playLives > 1) {
-        showLoseLifePopup = true; // показываем "Скушать таблетку"
+        showLoseLifePopup = true; // показываем "Таблеточку?"
     } else {
         showGameOverPopup = true;
     }
@@ -405,7 +409,7 @@ function drawLoseLifePopup() {
     ctx.fillStyle = "#fff";
     ctx.font = "20px Arial";
     ctx.textAlign = "center";
-    ctx.fillText("Скушать таблетку 💊", canvas.width/2, y + 50);
+    ctx.fillText("Ням 💊", canvas.width/2, y + 50);
 
     // кнопки
     ctx.fillStyle = "#4CAF50";
@@ -761,4 +765,5 @@ function draw() {
 
 // --- Запуск ---
 draw();
+
 
