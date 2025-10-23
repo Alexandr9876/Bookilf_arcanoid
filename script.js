@@ -600,13 +600,22 @@ function drawStory() {
                     resetStoryLevel();
                 }},
                 {text:"Выйти", color:"#f44336", onClick:()=>{
-                    gameState = "menu";
-                    storyStarted = false;
-                    storyPopup = null;
+                    exitToMenu();
                 }}
             ]);
         }
     }
+}
+
+// Функция для выхода в меню
+function exitToMenu() {
+    gameState = "menu";
+    storyStarted = false;
+    storyPopup = null;
+    storyGirl.hit = false;
+    storyGirl.dodges = 0;
+    heartAnimationProgress = 0;
+    storyHearts = [];
 }
 
 // --- Улучшенный обработчик кликов ---
