@@ -690,7 +690,165 @@ function enhancedCreateParticlesWithSound(x, y, count, color, soundType = null) 
     }
 }
 
-// ... (остальной код остается таким же, включая drawPlayWithEffects, resetBallPaddle и т.д.)
+// --- Функция drawPlayWithEffects ---
+function drawPlayWithEffects() {
+    // Фон
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, "#ff9eb5");
+    gradient.addColorStop(1, "#ffd6a5");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    drawBedBackground();
+
+    // Частицы
+    drawParticles();
+
+    // Блоки
+    ctx.font = `40px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    
+    blocks.forEach(block => {
+        if(!block.destroyed) {
+            ctx.fillText(blockEmoji, block.x, block.y);
+        }
+    });
+
+    if (blocks.every(block => block.destroyed)) {
+        showWinPopup = true;
+        if (soundManager.enabled) soundManager.playWin();
+    }
+
+    // Шарик
+    ctx.font = `30px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif`;
+    ctx.fillText(ballEmoji, ball.x, ball.y);
+
+    // Платформа
+    ctx.textBaseline = "bottom";
+    ctx.font = `90px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif`;
+    ctx.fillText(paddleEmoji, paddle.x, paddle.y);
+    ctx.textBaseline = "top";
+
+    // Счетчик
+    ctx.font = "bold 24px Arial, sans-serif";
+    ctx.fillStyle = "#000000";
+    ctx.fillText(`Очки: ${playScore}`, 20, 40);
+
+    ctx.font = "28px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
+    ctx.fillText("💊".repeat(playLives), 20, 70);
+
+    // Игровая логика
+    if (!showGameOverPopup && !showWinPopup && !showLoseLifePopup) {
+        ball.x += ball.dx;
+        ball.y += ball.dy;
+
+        // Обновление физики
+        updateBallPhysics(ball);
+
+        if(ball.x < 0 || ball.x > canvas.width - ball.size) {
+            ball.dx = -ball.dx;
+            enhancedCreateParticlesWithSound(ball.x, ball.y, 5, "#ffffff", 'wall');
+        }
+        if(ball.y < 0) {
+            ball.dy = -ball.dy;
+            enhancedCreateParticlesWithSound(ball.x, ball.y, 5, "#ffffff", 'wall');
+        }
+
+        if(ball.y + ball.size >= paddle.y - 90 &&
+           ball.y <= paddle.y &&
+           ball.x + ball.size >= paddle.x &&
+           ball.x <= paddle.x + paddle.width) {
+            ball.dy = -Math.abs(ball.dy);
+            enhancedCreateParticlesWithSound(ball.x, ball.y, 8, "#ff6b6b", 'paddle');
+        }
+
+        blocks.forEach(block => {
+            if(!block.destroyed && checkCollision(ball, block)) {
+                block.destroyed = true;
+                ball.dy = -ball.dy;
+                playScore++;
+                enhancedCreateParticlesWithSound(block.x + block.size/2, block.y + block.size/2, 10, "#ffd93d", 'block');
+            }
+        });
+
+        if(ball.y > canvas.height) {
+            if (playLives > 1) {
+                showLoseLifePopup = true;
+            } else {
+                showGameOverPopup = true;
+                if (soundManager.enabled) soundManager.playLose();
+            }
+            ball.dx = 0;
+            ball.dy = 0;
+            enhancedCreateParticlesWithSound(ball.x, ball.y, 15, "#ff0000", 'life');
+        }
+    }
+
+    // Обновление частиц
+    updateParticles();
+
+    // Попапы
+    if (showWinPopup) {
+        drawPopup("Ты Гигант! 💪", [
+            {text:"Еще раз", color:"#4CAF50", onClick:()=>{
+                showWinPopup = false;
+                playLives = 3;
+                playScore = 0;
+                generateBlocks();
+                resetBallPaddle();
+                particles = [];
+            }},
+            {text:"Выйти", color:"#f44336", onClick:()=>{
+                showWinPopup = false;
+                gameState = "menu";
+                particles = [];
+            }}
+        ]);
+    } else if (showLoseLifePopup) {
+        drawPopup("Ням 💊", [
+            {text:"Принять", color:"#4CAF50", onClick:()=>{
+                showLoseLifePopup = false;
+                playLives--;
+                resetBallPaddle();
+                particles = [];
+            }},
+            {text:"Выйти", color:"#f44336", onClick:()=>{
+                showLoseLifePopup = false;
+                gameState = "menu";
+                particles = [];
+            }}
+        ]);
+    } else if (showGameOverPopup) {
+        drawPopup("Ты сражался, как тигр 🐯", [
+            {text:"Еще раз", color:"#4CAF50", onClick:()=>{
+                showGameOverPopup = false;
+                playLives = 3;
+                playScore = 0;
+                generateBlocks();
+                resetBallPaddle();
+                particles = [];
+            }},
+            {text:"Выйти", color:"#f44336", onClick:()=>{
+                showGameOverPopup = false;
+                gameState = "menu";
+                particles = [];
+            }}
+        ]);
+    }
+}
+
+function resetBallPaddle() {
+    ball.x = canvas.width/2;
+    ball.y = canvas.height/2;
+    ball.dx = 4 * (Math.random() > 0.5 ? 1 : -1);
+    ball.dy = -4;
+
+    paddle.width = Math.min(90, canvas.width * 0.2);
+    paddle.height = 30;
+    paddle.x = canvas.width/2 - paddle.width/2;
+    paddle.y = canvas.height - 50;
+}
 
 // --- СЮЖЕТНЫЙ РЕЖИМ ---
 function resetStoryLevel() {
