@@ -83,7 +83,7 @@ let bedGrid = [];
 let storyLevel = 1;
 let storyPopup = null;
 let storyStarted = false;
-let storyGirl = { x: 0, y: 0, size: 60, dodges: 0, maxDodges: 5, hit: false };
+let storyGirl = { x: 0, y: 0, size: 60, dodges: 0, maxDodges: 2, hit: false };
 let storyBall = { x: 0, y: 0, dx: 0, dy: 0, size: 30, emoji: "🌹" };
 let storyPaddle = { x: 0, y: 0, width: 80, height: 30, emoji: "👨" };
 
@@ -549,6 +549,7 @@ function resetStoryLevel() {
     storyGirl.x = canvas.width/2 - storyGirl.size/2;
     storyGirl.y = 150;
     storyGirl.dodges = 0;
+    storyGirl.maxDodges = 3;
     storyGirl.hit = false;
     
     storyBall.x = canvas.width/2;
@@ -2328,3 +2329,4 @@ window.gameDebug = {
         }
     }
 };
+
