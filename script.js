@@ -75,7 +75,7 @@ const bedEmoji = "🛏️";
 let bedGrid = [];
 
 // --- СЮЖЕТНЫЙ РЕЖИМ ---
-let storyLevel = 0;
+let storyLevel = 1; // 1 - первый уровень, 2 - второй уровень
 let storyPopup = null;
 let storyStarted = false;
 let storyGirl = { x: 0, y: 0, size: 60, dodges: 0, maxDodges: 5, hit: false };
@@ -84,6 +84,13 @@ let storyPaddle = { x: 0, y: 0, width: 80, height: 30, emoji: "👨" };
 let storyHearts = [];
 let heartAnimationProgress = 0;
 let heartAnimationDuration = 120;
+
+// Второй уровень
+let storyBlocks = [];
+let storyLevel2Ball = { x: 0, y: 0, dx: 4, dy: -4, size: 30, emoji: "😎" };
+let storyLevel2Paddle = { x: 0, y: 0, width: 90, height: 30, emoji: "👨" };
+let storyLevel2Lives = 3;
+let storyLevel2Score = 0;
 
 // --- iOS detection ---
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -125,6 +132,28 @@ function generateBlocks() {
     }
 }
 
+function generateStoryBlocks() {
+    storyBlocks = [];
+    const cols = 8;
+    const rows = 3;
+    const spacing = 10;
+    const blockSize = 40;
+    const startX = (canvas.width - (cols * blockSize + (cols-1)*spacing))/2;
+    const startY = 100;
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            storyBlocks.push({
+                x: startX + c*(blockSize+spacing),
+                y: startY + r*(blockSize+spacing),
+                size: blockSize,
+                destroyed: false,
+                emoji: "👩"
+            });
+        }
+    }
+}
+
 function drawBedBackground() {
     ctx.font = "40px 'Segoe UI Emoji', Arial, sans-serif";
     ctx.textAlign = "left";
@@ -159,7 +188,11 @@ function resizeCanvas() {
         generateBlocks();
     }
     if (gameState === "story" && storyStarted) {
-        resetStoryLevel();
+        if (storyLevel === 1) {
+            resetStoryLevel();
+        } else if (storyLevel === 2) {
+            resetStoryLevel2();
+        }
     }
 }
 
@@ -477,38 +510,22 @@ function resetStoryLevel() {
     heartAnimationProgress = 0;
 }
 
-function drawStory() {
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, "#1a1a2e");
-    gradient.addColorStop(1, "#16213e");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+function resetStoryLevel2() {
+    storyLevel2Ball.x = canvas.width/2;
+    storyLevel2Ball.y = canvas.height/2;
+    storyLevel2Ball.dx = 4 * (Math.random() > 0.5 ? 1 : -1);
+    storyLevel2Ball.dy = -4;
+    
+    storyLevel2Paddle.x = canvas.width/2 - storyLevel2Paddle.width/2;
+    storyLevel2Paddle.y = canvas.height - 60;
+    
+    storyLevel2Lives = 3;
+    storyLevel2Score = 0;
+    
+    generateStoryBlocks();
+}
 
-    ctx.fillStyle = "white";
-    ctx.globalAlpha = 0.3;
-    for(let i = 0; i < 50; i++) {
-        const x = (i * 137) % canvas.width;
-        const y = (i * 79) % canvas.height;
-        ctx.fillRect(x, y, 2, 2);
-    }
-    ctx.globalAlpha = 1.0;
-
-    if (!storyStarted) {
-        storyPopup = drawPopup("Тебе снится сон...", [
-            {text:"Начать", color:"#4CAF50", onClick:()=>{
-                storyStarted = true;
-                storyPopup = null;
-                resetStoryLevel();
-            }}
-        ]);
-        return;
-    }
-
-    if (storyPopup) {
-        drawPopup(storyPopup.text, storyPopup.buttons);
-        return;
-    }
-
+function drawStoryLevel1() {
     // Девушка
     ctx.font = `${storyGirl.size}px 'Segoe UI Emoji', Arial, sans-serif`;
     ctx.fillText("👩", storyGirl.x, storyGirl.y);
@@ -545,14 +562,10 @@ function drawStory() {
         
         if (heartAnimationProgress >= heartAnimationDuration && !storyPopup) {
             storyPopup = drawPopup("Пора сон сделать явью", [
-                {text:"Проснуться", color:"#4CAF50", onClick:()=>{
-                    storyPopup = drawPopup("Скоро. В разработке", [
-                        {text:"В меню", color:"#4CAF50", onClick:()=>{
-                            gameState = "menu";
-                            storyStarted = false;
-                            storyPopup = null;
-                        }}
-                    ]);
+                {text:"Продолжить", color:"#4CAF50", onClick:()=>{
+                    storyLevel = 2;
+                    resetStoryLevel2();
+                    storyPopup = null;
                 }}
             ]);
         }
@@ -607,11 +620,137 @@ function drawStory() {
     }
 }
 
+function drawStoryLevel2() {
+    // блоки
+    ctx.font = `${storyBlocks[0]?.size || 40}px 'Segoe UI Emoji', Arial, sans-serif`;
+    storyBlocks.forEach(block => {
+        if(!block.destroyed) ctx.fillText(block.emoji, block.x, block.y);
+    });
+
+    // проверка победы
+    if (storyBlocks.every(block => block.destroyed)) {
+        storyPopup = drawPopup("Ты покорил все сердца! 💖", [
+            {text:"В меню", color:"#4CAF50", onClick:()=>{
+                exitToMenu();
+            }}
+        ]);
+        return;
+    }
+
+    // шарик
+    ctx.font = `${storyLevel2Ball.size}px 'Segoe UI Emoji', Arial, sans-serif`;
+    ctx.fillText(storyLevel2Ball.emoji, storyLevel2Ball.x, storyLevel2Ball.y);
+
+    // платформа
+    ctx.textBaseline = "bottom";
+    ctx.font = `${storyLevel2Paddle.height*3}px 'Segoe UI Emoji', Arial, sans-serif`;
+    ctx.fillText(storyLevel2Paddle.emoji, storyLevel2Paddle.x, storyLevel2Paddle.y);
+    ctx.textBaseline = "top";
+
+    // счетчик и жизни
+    ctx.font = "bold 24px Arial, sans-serif";
+    ctx.fillStyle = "#fff";
+    ctx.fillText(`Разбито сердец: ${storyLevel2Score}`, 20, 40);
+
+    ctx.font = "28px 'Segoe UI Emoji', Arial, sans-serif";
+    ctx.fillText("💖".repeat(storyLevel2Lives), 20, 70);
+
+    if (!storyPopup) {
+        storyLevel2Ball.x += storyLevel2Ball.dx;
+        storyLevel2Ball.y += storyLevel2Ball.dy;
+
+        if(storyLevel2Ball.x < 0 || storyLevel2Ball.x > canvas.width - storyLevel2Ball.size) storyLevel2Ball.dx = -storyLevel2Ball.dx;
+        if(storyLevel2Ball.y < 0) storyLevel2Ball.dy = -storyLevel2Ball.dy;
+
+        if(storyLevel2Ball.y + storyLevel2Ball.size >= storyLevel2Paddle.y - storyLevel2Paddle.height*3 &&
+           storyLevel2Ball.y <= storyLevel2Paddle.y &&
+           storyLevel2Ball.x + storyLevel2Ball.size >= storyLevel2Paddle.x &&
+           storyLevel2Ball.x <= storyLevel2Paddle.x + storyLevel2Paddle.width) {
+            storyLevel2Ball.dy = -storyLevel2Ball.dy;
+        }
+
+        // проверка попадания по блокам
+        storyBlocks.forEach(block => {
+            if(!block.destroyed &&
+               storyLevel2Ball.x + storyLevel2Ball.size > block.x &&
+               storyLevel2Ball.x < block.x + block.size &&
+               storyLevel2Ball.y + storyLevel2Ball.size > block.y &&
+               storyLevel2Ball.y < block.y + block.size) {
+                block.destroyed = true;
+                storyLevel2Ball.dy = -storyLevel2Ball.dy;
+                storyLevel2Score++;
+            }
+        });
+
+        // проверка падения шарика
+        if(storyLevel2Ball.y > canvas.height && !storyPopup) {
+            storyLevel2Lives--;
+            if (storyLevel2Lives > 0) {
+                storyLevel2Ball.x = canvas.width/2;
+                storyLevel2Ball.y = canvas.height/2;
+                storyLevel2Ball.dx = 4 * (Math.random() > 0.5 ? 1 : -1);
+                storyLevel2Ball.dy = -4;
+            } else {
+                storyPopup = drawPopup("Попробуй еще раз! 💔", [
+                    {text:"Повторить", color:"#4CAF50", onClick:()=>{
+                        storyPopup = null;
+                        resetStoryLevel2();
+                    }},
+                    {text:"Выйти", color:"#f44336", onClick:()=>{
+                        exitToMenu();
+                    }}
+                ]);
+            }
+        }
+    }
+}
+
+function drawStory() {
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, "#1a1a2e");
+    gradient.addColorStop(1, "#16213e");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "white";
+    ctx.globalAlpha = 0.3;
+    for(let i = 0; i < 50; i++) {
+        const x = (i * 137) % canvas.width;
+        const y = (i * 79) % canvas.height;
+        ctx.fillRect(x, y, 2, 2);
+    }
+    ctx.globalAlpha = 1.0;
+
+    if (!storyStarted) {
+        storyPopup = drawPopup("Тебе снится сон...", [
+            {text:"Начать", color:"#4CAF50", onClick:()=>{
+                storyStarted = true;
+                storyLevel = 1;
+                storyPopup = null;
+                resetStoryLevel();
+            }}
+        ]);
+        return;
+    }
+
+    if (storyPopup) {
+        drawPopup(storyPopup.text, storyPopup.buttons);
+        return;
+    }
+
+    if (storyLevel === 1) {
+        drawStoryLevel1();
+    } else if (storyLevel === 2) {
+        drawStoryLevel2();
+    }
+}
+
 // Функция для выхода в меню
 function exitToMenu() {
     gameState = "menu";
     storyStarted = false;
     storyPopup = null;
+    storyLevel = 1;
     storyGirl.hit = false;
     storyGirl.dodges = 0;
     heartAnimationProgress = 0;
@@ -766,136 +905,4 @@ function handleClick(e) {
                 }
                 
                 // Кнопка "Выйти"
-                if (x >= startX + btnWidth + btnSpacing && x <= startX + btnWidth + btnSpacing + btnWidth && 
-                    y >= popupArea.y + 130 && y <= popupArea.y + 130 + 50) {
-                    showGameOverPopup = false;
-                    gameState = "menu";
-                    e.preventDefault();
-                    return;
-                }
-            }
-        }
-    }
-
-    // Меню
-    if (gameState === "menu" && !isTransitioning) {
-        const buttonWidth = Math.min(240, canvas.width * 0.6);
-        const buttonHeight = Math.min(120, canvas.height * 0.15);
-        
-        // Кнопка "Играть"
-        if (x >= canvas.width/2 - buttonWidth/2 && x <= canvas.width/2 + buttonWidth/2 &&
-            y >= canvas.height*0.3 && y <= canvas.height*0.3 + buttonHeight) {
-            startTransition("arcanoid");
-            e.preventDefault();
-            return;
-        }
-        
-        // Кнопка "Сюжет"
-        if (x >= canvas.width/2 - buttonWidth/2 && x <= canvas.width/2 + buttonWidth/2 &&
-            y >= canvas.height*0.5 && y <= canvas.height*0.5 + buttonHeight * 0.7) {
-            startTransition("story");
-            e.preventDefault();
-            return;
-        }
-    }
-}
-
-// Улучшенные обработчики движения
-function handleMouseMove(e) {
-    let x;
-    if (e.type === 'touchmove') {
-        x = e.touches[0].clientX;
-    } else {
-        x = e.clientX;
-    }
-    
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    x = (x - rect.left) * scaleX;
-
-    if (gameState === "play" && !showGameOverPopup && !showWinPopup && !showLoseLifePopup) {
-        paddle.x = x - paddle.width/2;
-        paddle.x = Math.max(0, Math.min(paddle.x, canvas.width - paddle.width));
-    }
-    if (gameState === "story" && storyStarted && !storyPopup && !storyGirl.hit) {
-        storyPaddle.x = x - storyPaddle.width/2;
-        storyPaddle.x = Math.max(0, Math.min(storyPaddle.x, canvas.width - storyPaddle.width));
-    }
-}
-
-// Добавляем все типы событий
-canvas.addEventListener("click", handleClick);
-canvas.addEventListener("touchstart", handleClick);
-canvas.addEventListener("mousemove", handleMouseMove);
-canvas.addEventListener("touchmove", handleMouseMove);
-
-// --- Переход ---
-function startTransition(targetState) {
-    isTransitioning = true;
-    fadeOpacity = 0;
-
-    const fadeOut = setInterval(() => {
-        fadeOpacity += 0.05;
-        if (fadeOpacity >= 1) {
-            clearInterval(fadeOut);
-            if (targetState === "arcanoid") startArcanoid();
-            if (targetState === "story") startStory();
-
-            const fadeIn = setInterval(() => {
-                fadeOpacity -= 0.05;
-                if (fadeOpacity <= 0) {
-                    clearInterval(fadeIn);
-                    isTransitioning = false;
-                }
-            }, 30);
-        }
-    }, 30);
-}
-
-// --- Запуск режимов ---
-function startArcanoid() {
-    gameState = "play";
-    playLives = 3;
-    playScore = 0;
-    showGameOverPopup = false;
-    showWinPopup = false;
-    showLoseLifePopup = false;
-    generateBlocks();
-    resetBallPaddle();
-}
-
-function startStory() {
-    gameState = "story";
-    storyStarted = false;
-    storyPopup = null;
-}
-
-// --- Главный цикл ---
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (gameState === "menu") drawMenu();
-    else if (gameState === "arcanoid") drawArcanoid();
-    else if (gameState === "play") drawPlay();
-    else if (gameState === "story") drawStory();
-
-    if (isTransitioning) {
-        ctx.fillStyle = `rgba(0, 0, 0, ${fadeOpacity})`;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-
-    requestAnimationFrame(draw);
-}
-
-// Запускаем игру после загрузки
-window.addEventListener('load', function() {
-    resizeCanvas();
-    draw();
-});
-
-// Дополнительная инициализация для iOS
-if (isIOS) {
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(resizeCanvas, 100);
-    });
-}
+                if (x >= startX + btnWidth + btnSpacing && x <= startX
