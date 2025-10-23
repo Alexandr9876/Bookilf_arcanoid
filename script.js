@@ -13,16 +13,22 @@ canvas.style.width = "100%";
 canvas.style.height = "100%";
 canvas.style.display = "block";
 canvas.style.touchAction = "none"; // Важно для iOS
+canvas.style.zIndex = "1000";
 
 document.body.style.margin = "0";
 document.body.style.padding = "0";
 document.body.style.overflow = "hidden";
 document.body.style.background = "#000";
+document.body.style.touchAction = "none";
+document.body.style.userSelect = "none";
+document.body.style.webkitUserSelect = "none";
 document.body.appendChild(canvas);
 
 // --- Блокировка масштабирования и скролла (совместимо с iPhone) ---
 document.addEventListener('touchmove', function(e) {
-    e.preventDefault();
+    if (e.scale !== 1) {
+        e.preventDefault();
+    }
 }, { passive: false });
 
 document.addEventListener('gesturestart', function(e) {
@@ -58,9 +64,10 @@ let isTransitioning = false;
 let playLives = 3;
 let playScore = 0;
 
-const blockEmoji = "🍑";
-const ballEmoji = "🍌";
-const paddleEmoji = "🍆";
+// Универсальные эмодзи, совместимые со всеми устройствами
+const blockEmoji = "🍑"; // Персик
+const ballEmoji = "🍌"; // Банан
+const paddleEmoji = "🍆"; // Баклажан
 
 let blocks = [];
 let ball = { x: 0, y: 0, dx: 4, dy: -4, size: 30 };
@@ -71,7 +78,7 @@ let showWinPopup = false;
 let showLoseLifePopup = false;
 
 // --- Фон кроватей ---
-const bedEmoji = "🛏️";
+const bedEmoji = "🛏️"; // Кровать
 let bedGrid = [];
 
 // --- СЮЖЕТНЫЙ РЕЖИМ ---
@@ -79,21 +86,19 @@ let storyLevel = 1; // 1 - первый уровень, 2 - второй уро�
 let storyPopup = null;
 let storyStarted = false;
 let storyGirl = { x: 0, y: 0, size: 60, dodges: 0, maxDodges: 5, hit: false };
-let storyBall = { x: 0, y: 0, dx: 0, dy: 0, size: 30, emoji: "🌹" };
-let storyPaddle = { x: 0, y: 0, width: 80, height: 30, emoji: "👨" };
-let storyHearts = [];
-let heartAnimationProgress = 0;
-let heartAnimationDuration = 120;
+let storyBall = { x: 0, y: 0, dx: 0, dy: 0, size: 30, emoji: "🌹" }; // Роза
+let storyPaddle = { x: 0, y: 0, width: 80, height: 30, emoji: "👨" }; // Мужчина
 
 // Второй уровень
 let storyBlocks = [];
-let storyLevel2Ball = { x: 0, y: 0, dx: 4, dy: -4, size: 30, emoji: "😎" };
-let storyLevel2Paddle = { x: 0, y: 0, width: 90, height: 30, emoji: "👨" };
+let storyLevel2Ball = { x: 0, y: 0, dx: 4, dy: -4, size: 30, emoji: "😎" }; // Крутой парень в очках
+let storyLevel2Paddle = { x: 0, y: 0, width: 90, height: 30, emoji: "👨" }; // Мужчина
 let storyLevel2Lives = 3;
 let storyLevel2Score = 0;
 
 // --- iOS detection ---
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
 function generateBedGrid() {
     bedGrid = [];
@@ -148,14 +153,14 @@ function generateStoryBlocks() {
                 y: startY + r*(blockSize+spacing),
                 size: blockSize,
                 destroyed: false,
-                emoji: "👩"
+                emoji: "👩" // Девушка
             });
         }
     }
 }
 
 function drawBedBackground() {
-    ctx.font = "40px 'Segoe UI Emoji', Arial, sans-serif";
+    ctx.font = "40px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
     ctx.globalAlpha = 0.12;
@@ -170,30 +175,57 @@ function resizeCanvas() {
     const width = window.innerWidth;
     const height = window.innerHeight;
     
+    // Сохраняем старое состояние
+    const oldWidth = canvas.width;
+    const oldHeight = canvas.height;
+    
     // Устанавливаем точные размеры canvas
     canvas.width = width;
     canvas.height = height;
     
-    // Обновляем CSS размеры
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
+    // Масштабируем игровые объекты
+    const scaleX = width / oldWidth;
+    const scaleY = height / oldHeight;
+    
+    if (gameState === "play") {
+        // Масштабируем позиции игровых объектов
+        ball.x *= scaleX;
+        ball.y *= scaleY;
+        paddle.x *= scaleX;
+        paddle.y *= scaleY;
+        
+        blocks.forEach(block => {
+            block.x *= scaleX;
+            block.y *= scaleY;
+        });
+        
+        generateBedGrid();
+    }
+    
+    if (gameState === "story" && storyStarted) {
+        if (storyLevel === 1) {
+            storyGirl.x *= scaleX;
+            storyGirl.y *= scaleY;
+            storyBall.x *= scaleX;
+            storyBall.y *= scaleY;
+            storyPaddle.x *= scaleX;
+            storyPaddle.y *= scaleY;
+        } else if (storyLevel === 2) {
+            storyLevel2Ball.x *= scaleX;
+            storyLevel2Ball.y *= scaleY;
+            storyLevel2Paddle.x *= scaleX;
+            storyLevel2Paddle.y *= scaleY;
+            
+            storyBlocks.forEach(block => {
+                block.x *= scaleX;
+                block.y *= scaleY;
+            });
+        }
+    }
 
     maleY = height - 50;
     femaleY = height - 50;
-
     generateBedGrid();
-    
-    if (gameState === "play") {
-        resetBallPaddle();
-        generateBlocks();
-    }
-    if (gameState === "story" && storyStarted) {
-        if (storyLevel === 1) {
-            resetStoryLevel();
-        } else if (storyLevel === 2) {
-            resetStoryLevel2();
-        }
-    }
 }
 
 // Улучшенный обработчик resize для iOS
@@ -202,7 +234,13 @@ window.addEventListener("resize", function() {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(resizeCanvas, 100);
 });
-resizeCanvas();
+
+// Инициализация при загрузке
+function init() {
+    resizeCanvas();
+    generateBlocks();
+    resetBallPaddle();
+}
 
 // --- Бюстгальтер ---
 function drawButtonBra(x, y, w, h, color, text, textSize) {
@@ -325,7 +363,7 @@ function drawMenu() {
 
     const title = "🍑 Бананоид 🍌";
     let fontSize = Math.min(56, canvas.width / 10);
-    ctx.font = `bold ${fontSize}px 'Segoe UI Emoji', Arial, sans-serif`;
+    ctx.font = `bold ${fontSize}px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif`;
     
     ctx.textAlign = "center";
     ctx.fillStyle = "#fff";
@@ -340,7 +378,7 @@ function drawMenu() {
     drawButtonBra(canvas.width/2 - buttonWidth/2, canvas.height*0.3, buttonWidth, buttonHeight, "#4CAF50", "Играть", buttonTextSize);
     drawButtonStringPanties(canvas.width/2 - buttonWidth/2, canvas.height*0.5, buttonWidth, buttonHeight * 0.7, "#f44336", "Сюжет", buttonTextSize);
 
-    ctx.font = "48px 'Segoe UI Emoji', Arial, sans-serif";
+    ctx.font = "48px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
     ctx.fillText("👨", maleX, maleY);
     ctx.fillText("👩", femaleX, femaleY);
 
@@ -362,6 +400,7 @@ function drawArcanoid() {
 }
 
 function drawPlay() {
+    // Фон
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradient.addColorStop(0, "#ff9eb5");
     gradient.addColorStop(1, "#ffd6a5");
@@ -370,48 +409,58 @@ function drawPlay() {
 
     drawBedBackground();
 
-    // блоки
-    ctx.font = `${blocks[0]?.size || 40}px 'Segoe UI Emoji', Arial, sans-serif`;
+    // Блоки (персики)
+    ctx.font = `40px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    
     blocks.forEach(block => {
-        if(!block.destroyed) ctx.fillText(blockEmoji, block.x, block.y);
+        if(!block.destroyed) {
+            ctx.fillText(blockEmoji, block.x, block.y);
+        }
     });
 
+    // Проверка победы
     if (blocks.every(block => block.destroyed)) {
         showWinPopup = true;
     }
 
-    // шарик
-    ctx.font = `${ball.size}px 'Segoe UI Emoji', Arial, sans-serif`;
+    // Шарик (банан)
+    ctx.font = `30px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif`;
     ctx.fillText(ballEmoji, ball.x, ball.y);
 
-    // платформа
+    // Платформа (баклажан)
     ctx.textBaseline = "bottom";
-    ctx.font = `${paddle.height*3}px 'Segoe UI Emoji', Arial, sans-serif`;
+    ctx.font = `90px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif`;
     ctx.fillText(paddleEmoji, paddle.x, paddle.y);
     ctx.textBaseline = "top";
 
-    // счетчик и жизни
+    // Счетчик и жизни
     ctx.font = "bold 24px Arial, sans-serif";
     ctx.fillStyle = "#000000";
     ctx.fillText(`Очки: ${playScore}`, 20, 40);
 
-    ctx.font = "28px 'Segoe UI Emoji', Arial, sans-serif";
+    ctx.font = "28px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
     ctx.fillText("💊".repeat(playLives), 20, 70);
 
+    // Игровая логика (только если нет активного попапа)
     if (!showGameOverPopup && !showWinPopup && !showLoseLifePopup) {
         ball.x += ball.dx;
         ball.y += ball.dy;
 
+        // Столкновение со стенами
         if(ball.x < 0 || ball.x > canvas.width - ball.size) ball.dx = -ball.dx;
         if(ball.y < 0) ball.dy = -ball.dy;
 
-        if(ball.y + ball.size >= paddle.y - paddle.height*3 &&
+        // Столкновение с платформой
+        if(ball.y + ball.size >= paddle.y - 90 && // Учитываем высоту эмодзи платформы
            ball.y <= paddle.y &&
            ball.x + ball.size >= paddle.x &&
            ball.x <= paddle.x + paddle.width) {
-            ball.dy = -ball.dy;
+            ball.dy = -Math.abs(ball.dy); // Всегда отскакивает вверх
         }
 
+        // Столкновение с блоками
         blocks.forEach(block => {
             if(!block.destroyed &&
                ball.x + ball.size > block.x &&
@@ -424,12 +473,14 @@ function drawPlay() {
             }
         });
 
+        // Падение шарика
         if(ball.y > canvas.height) {
             if (playLives > 1) {
                 showLoseLifePopup = true;
             } else {
                 showGameOverPopup = true;
             }
+            // Останавливаем мяч
             ball.dx = 0;
             ball.dy = 0;
         }
@@ -505,9 +556,6 @@ function resetStoryLevel() {
     
     storyPaddle.x = canvas.width/2 - storyPaddle.width/2;
     storyPaddle.y = canvas.height - 60;
-    
-    storyHearts = [];
-    heartAnimationProgress = 0;
 }
 
 function resetStoryLevel2() {
@@ -526,51 +574,21 @@ function resetStoryLevel2() {
 }
 
 function drawStoryLevel1() {
+    const fontFamily = "'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
+    
     // Девушка
-    ctx.font = `${storyGirl.size}px 'Segoe UI Emoji', Arial, sans-serif`;
+    ctx.font = `60px ${fontFamily}`;
     ctx.fillText("👩", storyGirl.x, storyGirl.y);
 
     // Роза
-    ctx.font = `${storyBall.size}px 'Segoe UI Emoji', Arial, sans-serif`;
+    ctx.font = `30px ${fontFamily}`;
     ctx.fillText(storyBall.emoji, storyBall.x, storyBall.y);
 
     // Парень
     ctx.textBaseline = "bottom";
-    ctx.font = `${storyPaddle.height*2}px 'Segoe UI Emoji', Arial, sans-serif`;
+    ctx.font = `60px ${fontFamily}`;
     ctx.fillText(storyPaddle.emoji, storyPaddle.x, storyPaddle.y);
     ctx.textBaseline = "top";
-
-    if (storyGirl.hit && heartAnimationProgress < heartAnimationDuration) {
-        heartAnimationProgress++;
-        
-        if (heartAnimationProgress % 5 === 0 && storyHearts.length < 30) {
-            storyHearts.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                size: 20 + Math.random() * 30,
-                opacity: 0
-            });
-        }
-        
-        storyHearts.forEach(heart => {
-            heart.opacity = Math.min(heart.opacity + 0.02, 1);
-            ctx.globalAlpha = heart.opacity;
-            ctx.font = `${heart.size}px 'Segoe UI Emoji', Arial, sans-serif`;
-            ctx.fillText("❤️", heart.x, heart.y);
-        });
-        ctx.globalAlpha = 1.0;
-        
-        if (heartAnimationProgress >= heartAnimationDuration && !storyPopup) {
-            storyPopup = drawPopup("Пора сон сделать явью", [
-                {text:"Продолжить", color:"#4CAF50", onClick:()=>{
-                    storyLevel = 2;
-                    resetStoryLevel2();
-                    storyPopup = null;
-                }}
-            ]);
-        }
-        return;
-    }
 
     if (!storyGirl.hit) {
         storyBall.x += storyBall.dx;
@@ -583,7 +601,7 @@ function drawStoryLevel1() {
             storyBall.dy = -storyBall.dy;
         }
 
-        if (storyBall.y + storyBall.size >= storyPaddle.y - 40 &&
+        if (storyBall.y + storyBall.size >= storyPaddle.y - 60 &&
             storyBall.x > storyPaddle.x && storyBall.x < storyPaddle.x + storyPaddle.width) {
             storyBall.dy = -storyBall.dy;
         }
@@ -603,6 +621,15 @@ function drawStoryLevel1() {
                 storyGirl.hit = true;
                 storyBall.dx = 0;
                 storyBall.dy = 0;
+                setTimeout(() => {
+                    storyPopup = drawPopup("Пора сон сделать явью", [
+                        {text:"Продолжить", color:"#4CAF50", onClick:()=>{
+                            storyLevel = 2;
+                            resetStoryLevel2();
+                            storyPopup = null;
+                        }}
+                    ]);
+                }, 1000);
             }
         }
 
@@ -621,13 +648,15 @@ function drawStoryLevel1() {
 }
 
 function drawStoryLevel2() {
-    // блоки
-    ctx.font = `${storyBlocks[0]?.size || 40}px 'Segoe UI Emoji', Arial, sans-serif`;
+    const fontFamily = "'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
+    
+    // Блоки
+    ctx.font = `40px ${fontFamily}`;
     storyBlocks.forEach(block => {
         if(!block.destroyed) ctx.fillText(block.emoji, block.x, block.y);
     });
 
-    // проверка победы
+    // Проверка победы
     if (storyBlocks.every(block => block.destroyed)) {
         storyPopup = drawPopup("Ты покорил все сердца! 💖", [
             {text:"В меню", color:"#4CAF50", onClick:()=>{
@@ -637,22 +666,22 @@ function drawStoryLevel2() {
         return;
     }
 
-    // шарик
-    ctx.font = `${storyLevel2Ball.size}px 'Segoe UI Emoji', Arial, sans-serif`;
+    // Шарик
+    ctx.font = `30px ${fontFamily}`;
     ctx.fillText(storyLevel2Ball.emoji, storyLevel2Ball.x, storyLevel2Ball.y);
 
-    // платформа
+    // Платформа
     ctx.textBaseline = "bottom";
-    ctx.font = `${storyLevel2Paddle.height*3}px 'Segoe UI Emoji', Arial, sans-serif`;
+    ctx.font = `90px ${fontFamily}`;
     ctx.fillText(storyLevel2Paddle.emoji, storyLevel2Paddle.x, storyLevel2Paddle.y);
     ctx.textBaseline = "top";
 
-    // счетчик и жизни
+    // Счетчик и жизни
     ctx.font = "bold 24px Arial, sans-serif";
     ctx.fillStyle = "#fff";
     ctx.fillText(`Разбито сердец: ${storyLevel2Score}`, 20, 40);
 
-    ctx.font = "28px 'Segoe UI Emoji', Arial, sans-serif";
+    ctx.font = "28px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
     ctx.fillText("💖".repeat(storyLevel2Lives), 20, 70);
 
     if (!storyPopup) {
@@ -662,14 +691,14 @@ function drawStoryLevel2() {
         if(storyLevel2Ball.x < 0 || storyLevel2Ball.x > canvas.width - storyLevel2Ball.size) storyLevel2Ball.dx = -storyLevel2Ball.dx;
         if(storyLevel2Ball.y < 0) storyLevel2Ball.dy = -storyLevel2Ball.dy;
 
-        if(storyLevel2Ball.y + storyLevel2Ball.size >= storyLevel2Paddle.y - storyLevel2Paddle.height*3 &&
+        if(storyLevel2Ball.y + storyLevel2Ball.size >= storyLevel2Paddle.y - 90 &&
            storyLevel2Ball.y <= storyLevel2Paddle.y &&
            storyLevel2Ball.x + storyLevel2Ball.size >= storyLevel2Paddle.x &&
            storyLevel2Ball.x <= storyLevel2Paddle.x + storyLevel2Paddle.width) {
-            storyLevel2Ball.dy = -storyLevel2Ball.dy;
+            storyLevel2Ball.dy = -Math.abs(storyLevel2Ball.dy);
         }
 
-        // проверка попадания по блокам
+        // Проверка попадания по блокам
         storyBlocks.forEach(block => {
             if(!block.destroyed &&
                storyLevel2Ball.x + storyLevel2Ball.size > block.x &&
@@ -682,7 +711,7 @@ function drawStoryLevel2() {
             }
         });
 
-        // проверка падения шарика
+        // Проверка падения шарика
         if(storyLevel2Ball.y > canvas.height && !storyPopup) {
             storyLevel2Lives--;
             if (storyLevel2Lives > 0) {
@@ -753,15 +782,15 @@ function exitToMenu() {
     storyLevel = 1;
     storyGirl.hit = false;
     storyGirl.dodges = 0;
-    heartAnimationProgress = 0;
-    storyHearts = [];
 }
 
-// --- Улучшенный обработчик кликов ---
+// --- Улучшенный обработчик кликов и касаний ---
 function handleClick(e) {
+    e.preventDefault();
+    
     let x, y;
     
-    if (e.type === 'touchstart' || e.type === 'touchend') {
+    if (e.type.includes('touch')) {
         const touch = e.touches && e.touches[0] ? e.touches[0] : e.changedTouches[0];
         x = touch.clientX;
         y = touch.clientY;
@@ -775,7 +804,7 @@ function handleClick(e) {
     x = x - rect.left;
     y = y - rect.top;
 
-    // Масштабирование координат если нужно
+    // Масштабирование координат
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     x *= scaleX;
@@ -789,7 +818,6 @@ function handleClick(e) {
                 y >= btn.area.y && y <= btn.area.y + btn.area.h) {
                 btn.onClick();
                 clicked = true;
-                e.preventDefault();
             }
         });
         if (clicked) return;
@@ -797,8 +825,7 @@ function handleClick(e) {
 
     // Обработка попапов игрового режима
     if (gameState === "play") {
-        // Попап победы
-        if (showWinPopup) {
+        const handlePlayPopup = (popupButtons) => {
             const popupArea = {
                 x: (canvas.width - Math.min(400, canvas.width - 40)) / 2,
                 y: (canvas.height - 220) / 2,
@@ -814,95 +841,76 @@ function handleClick(e) {
                 const totalWidth = 2 * btnWidth + btnSpacing;
                 const startX = canvas.width/2 - totalWidth/2;
                 
-                // Кнопка "Еще раз"
-                if (x >= startX && x <= startX + btnWidth && 
-                    y >= popupArea.y + 130 && y <= popupArea.y + 130 + 50) {
+                popupButtons.forEach((btnAction, index) => {
+                    const btnX = startX + index * (btnWidth + btnSpacing);
+                    if (x >= btnX && x <= btnX + btnWidth && 
+                        y >= popupArea.y + 130 && y <= popupArea.y + 130 + 50) {
+                        btnAction();
+                        return true;
+                    }
+                });
+            }
+            return false;
+        };
+
+        if (showWinPopup) {
+            if (handlePlayPopup([
+                () => {
                     showWinPopup = false;
                     playLives = 3;
                     playScore = 0;
                     generateBlocks();
                     resetBallPaddle();
-                    e.preventDefault();
-                    return;
-                }
-                
-                // Кнопка "Выйти"
-                if (x >= startX + btnWidth + btnSpacing && x <= startX + btnWidth + btnSpacing + btnWidth && 
-                    y >= popupArea.y + 130 && y <= popupArea.y + 130 + 50) {
+                },
+                () => {
                     showWinPopup = false;
                     gameState = "menu";
-                    e.preventDefault();
-                    return;
                 }
-            }
+            ])) return;
         }
         
-        // Попап потери жизни
         if (showLoseLifePopup) {
-            const popupArea = {
-                x: (canvas.width - Math.min(400, canvas.width - 40)) / 2,
-                y: (canvas.height - 220) / 2,
-                w: Math.min(400, canvas.width - 40),
-                h: 220
-            };
-            
-            if (x >= popupArea.x && x <= popupArea.x + popupArea.w &&
-                y >= popupArea.y && y <= popupArea.y + popupArea.h) {
-                
-                const btnWidth = 120;
-                const btnSpacing = 20;
-                const totalWidth = 2 * btnWidth + btnSpacing;
-                const startX = canvas.width/2 - totalWidth/2;
-                
-                // Кнопка "Принять"
-                if (x >= startX && x <= startX + btnWidth && 
-                    y >= popupArea.y + 130 && y <= popupArea.y + 130 + 50) {
+            if (handlePlayPopup([
+                () => {
                     showLoseLifePopup = false;
                     playLives--;
                     resetBallPaddle();
-                    e.preventDefault();
-                    return;
-                }
-                
-                // Кнопка "Выйти"
-                if (x >= startX + btnWidth + btnSpacing && x <= startX + btnWidth + btnSpacing + btnWidth && 
-                    y >= popupArea.y + 130 && y <= popupArea.y + 130 + 50) {
+                },
+                () => {
                     showLoseLifePopup = false;
                     gameState = "menu";
-                    e.preventDefault();
-                    return;
                 }
-            }
+            ])) return;
         }
         
-        // Попап Game Over
         if (showGameOverPopup) {
-            const popupArea = {
-                x: (canvas.width - Math.min(400, canvas.width - 40)) / 2,
-                y: (canvas.height - 220) / 2,
-                w: Math.min(400, canvas.width - 40),
-                h: 220
-            };
-            
-            if (x >= popupArea.x && x <= popupArea.x + popupArea.w &&
-                y >= popupArea.y && y <= popupArea.y + popupArea.h) {
-                
-                const btnWidth = 120;
-                const btnSpacing = 20;
-                const totalWidth = 2 * btnWidth + btnSpacing;
-                const startX = canvas.width/2 - totalWidth/2;
-                
-                // Кнопка "Еще раз"
-                if (x >= startX && x <= startX + btnWidth && 
-                    y >= popupArea.y + 130 && y <= popupArea.y + 130 + 50) {
+            if (handlePlayPopup([
+                () => {
                     showGameOverPopup = false;
                     playLives = 3;
                     playScore = 0;
                     generateBlocks();
                     resetBallPaddle();
-                    e.preventDefault();
-                    return;
+                },
+                () => {
+                    showGameOverPopup = false;
+                    gameState = "menu";
                 }
-                
-                // Кнопка "Выйти"
-                if (x >= startX + btnWidth + btnSpacing && x <= startX
+            ])) return;
+        }
+    }
+
+    // Меню
+    if (gameState === "menu" && !isTransitioning) {
+        const buttonWidth = Math.min(240, canvas.width * 0.6);
+        const buttonHeight = Math.min(120, canvas.height * 0.15);
+        
+        // Кнопка "Играть"
+        if (x >= canvas.width/2 - buttonWidth/2 && x <= canvas.width/2 + buttonWidth/2 &&
+            y >= canvas.height*0.3 && y <= canvas.height*0.3 + buttonHeight) {
+            startTransition("play");
+            return;
+        }
+        
+        // Кнопка "Сюжет"
+        if (x >= canvas.width/2 - buttonWidth/2 && x <= canvas.width/
