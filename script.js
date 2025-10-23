@@ -164,25 +164,6 @@ class SoundManager {
         setTimeout(() => this.playTone(87.31, 400, 'sawtooth'), 200); // F2 очень низкий
     }
 
-    // Звук тошноты
-    playSick() {
-        this.playTone(98, 300, 'sawtooth'); // G2
-        setTimeout(() => this.playTone(87.31, 300, 'sawtooth'), 100); // F2
-    }
-
-    // Звук счастья
-    playHappy() {
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
-        notes.forEach((freq, index) => {
-            setTimeout(() => this.playTone(freq, 150, 'sine'), index * 80);
-        });
-    }
-
-    // Звук старухи
-    playOldWoman() {
-        this.playTone(73.42, 400, 'square'); // D2 низкий
-    }
-
     // Переключение звука
     toggle() {
         this.enabled = !this.enabled;
@@ -252,15 +233,36 @@ let storyLevel3Score = 0;
 let grandpaHit = false;
 let grandpaAngry = false;
 
-// Четвертый уровень - Падающие блоки
-let storyLevel4Blocks = [];
-let storyLevel4Paddle = { x: 0, y: 0, width: 80, height: 30, emoji: "👨" };
-let storyLevel4Lives = 3;
-let storyLevel4Score = 0;
-let storyLevel4GirlsCaught = 0;
-let storyLevel4SpawnTimer = 0;
-let storyLevel4SpawnInterval = 60; // кадры между спавном блоков
-let storyLevel4BlockSpeed = 3;
+// --- Обновленные функции с добавлением звуков ---
+function enhancedCreateParticlesWithSound(x, y, count, color, soundType = null) {
+    createParticles(x, y, count, color);
+    
+    if (soundType && soundManager.enabled) {
+        switch(soundType) {
+            case 'block':
+                soundManager.playBlockHit();
+                break;
+            case 'wall':
+                soundManager.playWallBounce();
+                break;
+            case 'paddle':
+                soundManager.playPaddleBounce();
+                break;
+            case 'life':
+                soundManager.playLifeLost();
+                break;
+            case 'kiss':
+                soundManager.playKiss();
+                break;
+            case 'blush':
+                soundManager.playBlush();
+                break;
+            case 'angry':
+                soundManager.playAngryGrandpa();
+                break;
+        }
+    }
+}
 
 function generateBedGrid() {
     bedGrid = [];
@@ -327,26 +329,28 @@ function generateStoryBlocks() {
 // Генерация сердца из смайликов для третьего уровня
 function generateHeartBlocks() {
     storyLevel3Blocks = [];
-    const blockSize = Math.min(35, canvas.width * 0.04);
+    const blockSize = 35;
     const centerX = canvas.width / 2;
-    const centerY = canvas.height * 0.35;
-    const scale = Math.min(1.2, canvas.width / 500);
+    const centerY = canvas.height * 0.4; // Центрируем по вертикали
+    const scale = Math.min(canvas.width * 0.8 / 350, canvas.height * 0.6 / 300); // Адаптивный масштаб
     
+    // Координаты для сердца
     const heartPoints = [];
-    for (let angle = 0; angle < Math.PI * 2; angle += 0.08) {
+    for (let angle = 0; angle < Math.PI * 2; angle += 0.08) { // Более плотное заполнение
         const t = angle;
         const x = 16 * Math.pow(Math.sin(t), 3);
         const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
         heartPoints.push({x: x * scale, y: y * scale});
     }
     
+    // Создаем блоки в форме сердца
     heartPoints.forEach((point, index) => {
         const x = centerX + point.x * blockSize;
         const y = centerY + point.y * blockSize;
         
-        if (x >= 0 && x <= canvas.width - blockSize && 
-            y >= 0 && y <= canvas.height * 0.7) {
-            
+        // Проверяем, чтобы блоки не выходили за пределы экрана
+        if (x >= 0 && x <= canvas.width - blockSize && y >= 0 && y <= canvas.height * 0.8) {
+            // Определяем позицию для деда (в центре сердца)
             const isCenter = Math.abs(point.x) < 1.5 && Math.abs(point.y) < 1.5;
             
             storyLevel3Blocks.push({
@@ -362,62 +366,11 @@ function generateHeartBlocks() {
         }
     });
     
+    // Если блоков слишком мало, увеличиваем масштаб
     if (storyLevel3Blocks.length < 10) {
         storyLevel3Blocks = [];
-        createSimpleHeart();
+        generateHeartBlocks(); // Рекурсивно перегенерируем с увеличенным масштабом
     }
-}
-
-function createSimpleHeart() {
-    const blockSize = 30;
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height * 0.4;
-    
-    const simpleHeart = [
-        {x: 0, y: -1}, {x: 1, y: -1}, {x: -1, y: 0}, {x: 0, y: 0}, {x: 1, y: 0}, {x: 2, y: 0},
-        {x: -2, y: 1}, {x: -1, y: 1}, {x: 0, y: 1}, {x: 1, y: 1}, {x: 2, y: 1}, {x: 3, y: 1},
-        {x: -1, y: 2}, {x: 0, y: 2}, {x: 1, y: 2}, {x: 2, y: 2}, {x: 0, y: 3}, {x: 1, y: 3}
-    ];
-    
-    simpleHeart.forEach(point => {
-        const x = centerX + point.x * blockSize;
-        const y = centerY + point.y * blockSize;
-        
-        if (x >= 0 && x <= canvas.width - blockSize && y >= 0) {
-            const isCenter = point.x === 0 && point.y === 0;
-            storyLevel3Blocks.push({
-                x: x,
-                y: y,
-                size: blockSize,
-                destroyed: false,
-                emoji: isCenter ? "👴" : "👩",
-                isGrandpa: isCenter,
-                isBlushing: false,
-                isAngry: false
-            });
-        }
-    });
-}
-
-// Функция для спавна блоков в четвертом уровне
-function spawnStoryLevel4Block() {
-    const types = [
-        { emoji: "👩", type: "girl" },
-        { emoji: "💩", type: "poop" },
-        { emoji: "👵", type: "oldWoman" }
-    ];
-    
-    const randomType = types[Math.floor(Math.random() * types.length)];
-    const size = 40;
-    
-    storyLevel4Blocks.push({
-        x: Math.random() * (canvas.width - size),
-        y: -size,
-        size: size,
-        emoji: randomType.emoji,
-        type: randomType.type,
-        speed: storyLevel4BlockSpeed + Math.random() * 1
-    });
 }
 
 function drawBedBackground() {
@@ -460,8 +413,6 @@ function resizeCanvas() {
         } else if (storyLevel === 3) {
             generateHeartBlocks();
             resetStoryLevel3();
-        } else if (storyLevel === 4) {
-            resetStoryLevel4();
         }
     }
 }
@@ -604,16 +555,6 @@ function drawMenuWithSoundControls() {
     drawButtonBra(canvas.width/2 - buttonWidth/2, canvas.height*0.3, buttonWidth, buttonHeight, "#4CAF50", "Играть", buttonTextSize);
     drawButtonStringPanties(canvas.width/2 - buttonWidth/2, canvas.height*0.5, buttonWidth, buttonHeight * 0.7, "#f44336", "Сюжет", buttonTextSize);
 
-    ctx.font = "48px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
-    ctx.fillText("👨", maleX, maleY);
-    ctx.fillText("👩", femaleX, femaleY);
-
-    maleX += maleDx;
-    if (maleX < 20 || maleX > canvas.width - 40) maleDx = -maleDx;
-
-    femaleX += femaleDx;
-    if (femaleX < 20 || femaleX > canvas.width - 40) femaleDx = -femaleDx;
-
     // Кнопка включения/выключения звука
     const soundButtonSize = 40;
     const soundButtonX = canvas.width - soundButtonSize - 20;
@@ -639,6 +580,16 @@ function drawMenuWithSoundControls() {
         w: soundButtonSize,
         h: soundButtonSize
     };
+
+    ctx.font = "48px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
+    ctx.fillText("👨", maleX, maleY);
+    ctx.fillText("👩", femaleX, femaleY);
+
+    maleX += maleDx;
+    if (maleX < 20 || maleX > canvas.width - 40) maleDx = -maleDx;
+
+    femaleX += femaleDx;
+    if (femaleX < 20 || femaleX > canvas.width - 40) femaleDx = -femaleDx;
 }
 
 function drawArcanoid() {
@@ -649,48 +600,7 @@ function drawArcanoid() {
     ctx.textAlign = "center";
     ctx.fillText("Скоро (в разработке)", canvas.width/2, canvas.height/2);
 }
-
-// --- Обновленная функция с добавлением звуков ---
-function enhancedCreateParticlesWithSound(x, y, count, color, soundType = null) {
-    createParticles(x, y, count, color);
-    
-    if (soundType && soundManager.enabled) {
-        switch(soundType) {
-            case 'block':
-                soundManager.playBlockHit();
-                break;
-            case 'wall':
-                soundManager.playWallBounce();
-                break;
-            case 'paddle':
-                soundManager.playPaddleBounce();
-                break;
-            case 'life':
-                soundManager.playLifeLost();
-                break;
-            case 'kiss':
-                soundManager.playKiss();
-                break;
-            case 'blush':
-                soundManager.playBlush();
-                break;
-            case 'angry':
-                soundManager.playAngryGrandpa();
-                break;
-            case 'sick':
-                soundManager.playSick();
-                break;
-            case 'happy':
-                soundManager.playHappy();
-                break;
-            case 'oldWoman':
-                soundManager.playOldWoman();
-                break;
-        }
-    }
-}
-
-// --- Функция drawPlayWithEffects ---
+// --- Улучшенный режим Играть с частицами и звуками ---
 function drawPlayWithEffects() {
     // Фон
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
@@ -738,7 +648,7 @@ function drawPlayWithEffects() {
     ctx.font = "28px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
     ctx.fillText("💊".repeat(playLives), 20, 70);
 
-    // Игровая логика
+    // Игровая логика с звуками
     if (!showGameOverPopup && !showWinPopup && !showLoseLifePopup) {
         ball.x += ball.dx;
         ball.y += ball.dy;
@@ -775,13 +685,14 @@ function drawPlayWithEffects() {
         if(ball.y > canvas.height) {
             if (playLives > 1) {
                 showLoseLifePopup = true;
+                enhancedCreateParticlesWithSound(ball.x, ball.y, 15, "#ff0000", 'life');
             } else {
                 showGameOverPopup = true;
+                enhancedCreateParticlesWithSound(ball.x, ball.y, 15, "#ff0000", 'life');
                 if (soundManager.enabled) soundManager.playLose();
             }
             ball.dx = 0;
             ball.dy = 0;
-            enhancedCreateParticlesWithSound(ball.x, ball.y, 15, "#ff0000", 'life');
         }
     }
 
@@ -855,7 +766,7 @@ function resetStoryLevel() {
     storyGirl.x = canvas.width/2 - storyGirl.size/2;
     storyGirl.y = 150;
     storyGirl.dodges = 0;
-    storyGirl.maxDodges = 2;
+    storyGirl.maxDodges = 2; // Теперь 2 уворота, на третье попадание - победа
     storyGirl.hit = false;
     
     storyBall.x = canvas.width/2;
@@ -899,21 +810,7 @@ function resetStoryLevel3() {
     generateHeartBlocks();
 }
 
-// Сброс четвертого уровня
-function resetStoryLevel4() {
-    storyLevel4Blocks = [];
-    storyLevel4Paddle.x = canvas.width/2 - storyLevel4Paddle.width/2;
-    storyLevel4Paddle.y = canvas.height - 80;
-    storyLevel4Lives = 3;
-    storyLevel4Score = 0;
-    storyLevel4GirlsCaught = 0;
-    storyLevel4SpawnTimer = 0;
-    storyLevel4SpawnInterval = 60;
-    storyLevel4BlockSpeed = 3;
-    storyLevel4Paddle.emoji = "👨"; // Сбрасываем смайлик на нормальный
-}
-
-// --- Улучшенный первый уровень сюжета ---
+// --- Улучшенный первый уровень сюжета с 2 уворотами ---
 function drawStoryLevel1WithEffects() {
     const fontFamily = "'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
     
@@ -1011,7 +908,7 @@ function drawStoryLevel1WithEffects() {
     }
 }
 
-// --- Улучшенный второй уровень сюжета ---
+// --- Улучшенный второй уровень сюжета с попапом при потере жизни ---
 function drawStoryLevel2WithEffects() {
     const fontFamily = "'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
     
@@ -1093,14 +990,24 @@ function drawStoryLevel2WithEffects() {
             enhancedCreateParticlesWithSound(storyLevel2Ball.x, storyLevel2Ball.y, 15, "#ff0000", 'life');
             
             if (storyLevel2Lives > 0) {
-                storyLevel2Ball.x = canvas.width/2;
-                storyLevel2Ball.y = canvas.height/2;
-                storyLevel2Ball.dx = 4 * (Math.random() > 0.5 ? 1 : -1);
-                storyLevel2Ball.dy = -4;
-            } else {
-                if (soundManager.enabled) soundManager.playLose();
+                // Показываем попап при потере жизни
                 storyPopup = drawPopup("Ты разбил ей сердце 💔", [
                     {text:"Продолжить", color:"#4CAF50", onClick:()=>{
+                        storyPopup = null;
+                        storyLevel2Ball.x = canvas.width/2;
+                        storyLevel2Ball.y = canvas.height/2;
+                        storyLevel2Ball.dx = 4 * (Math.random() > 0.5 ? 1 : -1);
+                        storyLevel2Ball.dy = -4;
+                    }},
+                    {text:"Выйти", color:"#f44336", onClick:()=>{
+                        exitToMenu();
+                        particles = [];
+                    }}
+                ]);
+            } else {
+                if (soundManager.enabled) soundManager.playLose();
+                storyPopup = drawPopup("Попробуй еще раз! 💔", [
+                    {text:"Повторить", color:"#4CAF50", onClick:()=>{
                         storyPopup = null;
                         resetStoryLevel2();
                         particles = [];
@@ -1118,7 +1025,7 @@ function drawStoryLevel2WithEffects() {
     updateParticles();
 }
 
-// --- Улучшенный третий уровень сюжета ---
+// --- Улучшенный третий уровень сюжета с адаптивным сердцем ---
 function drawStoryLevel3WithEffects() {
     const fontFamily = "'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
     
@@ -1141,10 +1048,8 @@ function drawStoryLevel3WithEffects() {
     if (allGirlsBlushing && !grandpaHit) {
         if (soundManager.enabled) soundManager.playWin();
         storyPopup = drawPopup("Любовь победила! 💕\nВсе девушки смущены!", [
-            {text:"Продолжить", color:"#4CAF50", onClick:()=>{
-                storyLevel = 4;
-                resetStoryLevel4();
-                storyPopup = null;
+            {text:"В меню", color:"#4CAF50", onClick:()=>{
+                exitToMenu();
                 particles = [];
             }}
         ]);
@@ -1272,145 +1177,6 @@ function drawStoryLevel3WithEffects() {
     updateParticles();
 }
 
-// --- ЧЕТВЕРТЫЙ УРОВЕНЬ - Падающие блоки ---
-function drawStoryLevel4() {
-    const fontFamily = "'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
-    
-    // Платформа игрока
-    ctx.textBaseline = "bottom";
-    ctx.font = `90px ${fontFamily}`;
-    ctx.fillText(storyLevel4Paddle.emoji, storyLevel4Paddle.x, storyLevel4Paddle.y);
-    ctx.textBaseline = "top";
-
-    // Падающие блоки
-    ctx.font = `40px ${fontFamily}`;
-    storyLevel4Blocks.forEach(block => {
-        ctx.fillText(block.emoji, block.x, block.y);
-    });
-
-    // Счетчик
-    ctx.font = "bold 24px Arial, sans-serif";
-    ctx.fillStyle = "#fff";
-    ctx.fillText(`Поймано девушек: ${storyLevel4GirlsCaught}/5`, 20, 40);
-    ctx.fillText(`Жизни: ${storyLevel4Lives}`, 20, 70);
-
-    // Частицы
-    drawParticles();
-
-    if (!storyPopup) {
-        // Спавн новых блоков
-        storyLevel4SpawnTimer++;
-        if (storyLevel4SpawnTimer >= storyLevel4SpawnInterval) {
-            spawnStoryLevel4Block();
-            storyLevel4SpawnTimer = 0;
-            // Постепенно увеличиваем сложность
-            if (storyLevel4SpawnInterval > 30) {
-                storyLevel4SpawnInterval--;
-            }
-            if (storyLevel4BlockSpeed < 6) {
-                storyLevel4BlockSpeed += 0.1;
-            }
-        }
-
-        // Движение блоков
-        for (let i = storyLevel4Blocks.length - 1; i >= 0; i--) {
-            const block = storyLevel4Blocks[i];
-            block.y += block.speed;
-
-            // Проверка столкновения с платформой
-            if (block.y + block.size >= storyLevel4Paddle.y - 30 &&
-                block.y <= storyLevel4Paddle.y &&
-                block.x + block.size >= storyLevel4Paddle.x &&
-                block.x <= storyLevel4Paddle.x + storyLevel4Paddle.width) {
-                
-                // Обработка разных типов блоков
-                switch(block.type) {
-                    case "girl":
-                        // Девушка - счастье
-                        storyLevel4GirlsCaught++;
-                        enhancedCreateParticlesWithSound(block.x + block.size/2, block.y + block.size/2, 12, "#ff69b4", 'happy');
-                        storyLevel4Paddle.emoji = "😍"; // Счастливый смайлик
-                        setTimeout(() => {
-                            if (storyLevel4Paddle.emoji === "😍") {
-                                storyLevel4Paddle.emoji = "👨";
-                            }
-                        }, 2000);
-                        break;
-                        
-                    case "poop":
-                        // Какашка - тошнота
-                        enhancedCreateParticlesWithSound(block.x + block.size/2, block.y + block.size/2, 10, "#8B4513", 'sick');
-                        storyLevel4Paddle.emoji = "🤢"; // Тошнит смайлик
-                        setTimeout(() => {
-                            if (storyLevel4Paddle.emoji === "🤢") {
-                                storyLevel4Paddle.emoji = "👨";
-                            }
-                        }, 2000);
-                        break;
-                        
-                    case "oldWoman":
-                        // Старуха - потеря жизни
-                        storyLevel4Lives--;
-                        enhancedCreateParticlesWithSound(block.x + block.size/2, block.y + block.size/2, 15, "#ff0000", 'oldWoman');
-                        
-                        if (storyLevel4Lives > 0) {
-                            storyPopup = drawPopup("Уф... А было неплохо", [
-                                {text:"Продолжить", color:"#4CAF50", onClick:()=>{
-                                    storyPopup = null;
-                                }},
-                                {text:"Сначала", color:"#f44336", onClick:()=>{
-                                    storyPopup = null;
-                                    resetStoryLevel4();
-                                }}
-                            ]);
-                        }
-                        break;
-                }
-                
-                // Удаляем блок после столкновения
-                storyLevel4Blocks.splice(i, 1);
-                continue;
-            }
-
-            // Удаление блоков, упавших за экран
-            if (block.y > canvas.height) {
-                storyLevel4Blocks.splice(i, 1);
-            }
-        }
-
-        // Проверка победы
-        if (storyLevel4GirlsCaught >= 5) {
-            if (soundManager.enabled) soundManager.playWin();
-            storyPopup = drawPopup("Победа! 🎉\nТы нашел свою любовь!", [
-                {text:"В меню", color:"#4CAF50", onClick:()=>{
-                    exitToMenu();
-                    particles = [];
-                }}
-            ]);
-            return;
-        }
-
-        // Проверка поражения
-        if (storyLevel4Lives <= 0) {
-            if (soundManager.enabled) soundManager.playLose();
-            storyPopup = drawPopup("Игра окончена!\nПопробуй еще раз!", [
-                {text:"Сначала", color:"#4CAF50", onClick:()=>{
-                    storyPopup = null;
-                    resetStoryLevel4();
-                    particles = [];
-                }},
-                {text:"Выйти", color:"#f44336", onClick:()=>{
-                    exitToMenu();
-                    particles = [];
-                }}
-            ]);
-        }
-    }
-
-    // Обновление частиц
-    updateParticles();
-}
-
 function drawStory() {
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradient.addColorStop(0, "#1a1a2e");
@@ -1450,8 +1216,6 @@ function drawStory() {
         drawStoryLevel2WithEffects();
     } else if (storyLevel === 3) {
         drawStoryLevel3WithEffects();
-    } else if (storyLevel === 4) {
-        drawStoryLevel4();
     }
 }
 
@@ -1465,8 +1229,7 @@ function exitToMenu() {
     grandpaHit = false;
     grandpaAngry = false;
 }
-
-// --- Улучшенный обработчик кликов с поддержкой звука ---
+// --- Улучшенные обработчики событий с поддержкой звука ---
 function enhancedHandleClickWithSound(e) {
     e.preventDefault();
     
@@ -1652,9 +1415,6 @@ function handleMouseMove(e) {
         } else if (storyLevel === 3) {
             storyLevel3Paddle.x = x - storyLevel3Paddle.width/2;
             storyLevel3Paddle.x = Math.max(0, Math.min(storyLevel3Paddle.x, canvas.width - storyLevel3Paddle.width));
-        } else if (storyLevel === 4) {
-            storyLevel4Paddle.x = x - storyLevel4Paddle.width/2;
-            storyLevel4Paddle.x = Math.max(0, Math.min(storyLevel4Paddle.x, canvas.width - storyLevel4Paddle.width));
         }
     }
 }
@@ -1731,9 +1491,9 @@ function draw() {
     requestAnimationFrame(draw);
 }
 
-// --- Инициализация игры ---
+// --- Инициализация игры с поддержкой звука ---
 function enhancedInitGameWithSound() {
-    resizeCanvas();
+    enhancedResizeCanvas();
     generateBlocks();
     resetBallPaddle();
     generateBedGrid();
@@ -1751,16 +1511,6 @@ function enhancedInitGameWithSound() {
     draw();
 }
 
-// Запускаем игру когда страница загрузится
-window.addEventListener('load', enhancedInitGameWithSound);
-
-// Также запускаем при готовности DOM
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', enhancedInitGameWithSound);
-} else {
-    enhancedInitGameWithSound();
-}
-
 // --- Дополнительные улучшения для мобильных устройств ---
 
 // Предотвращение скролла на iOS
@@ -1772,7 +1522,7 @@ document.addEventListener('touchmove', function(e) {
 
 // Обработка изменения ориентации
 window.addEventListener('orientationchange', function() {
-    setTimeout(resizeCanvas, 100);
+    setTimeout(enhancedResizeCanvas, 100);
 });
 
 // Улучшенная обработка касаний для платформы
@@ -1820,9 +1570,6 @@ function handleTouchMove(e) {
         } else if (storyLevel === 3) {
             storyLevel3Paddle.x = x - storyLevel3Paddle.width/2;
             storyLevel3Paddle.x = Math.max(0, Math.min(storyLevel3Paddle.x, canvas.width - storyLevel3Paddle.width));
-        } else if (storyLevel === 4) {
-            storyLevel4Paddle.x = x - storyLevel4Paddle.width/2;
-            storyLevel4Paddle.x = Math.max(0, Math.min(storyLevel4Paddle.x, canvas.width - storyLevel4Paddle.width));
         }
     }
 }
@@ -1854,10 +1601,6 @@ function adaptSizes() {
         storyLevel3Paddle.height = 25;
         
         storyGirl.size = 50;
-        
-        // Четвертый уровень
-        storyLevel4Paddle.width = 70;
-        storyLevel4Paddle.height = 25;
     } else {
         // Десктопные настройки
         ball.size = 30;
@@ -1877,10 +1620,6 @@ function adaptSizes() {
         storyLevel3Paddle.height = 30;
         
         storyGirl.size = 60;
-        
-        // Четвертый уровень
-        storyLevel4Paddle.width = 80;
-        storyLevel4Paddle.height = 30;
     }
 }
 
@@ -1948,6 +1687,7 @@ function drawParticles() {
     ctx.globalAlpha = 1;
 }
 
+// --- Анимации для сюжетного режима ---
 let storyHearts = [];
 let heartAnimationProgress = 0;
 let heartAnimationDuration = 120;
@@ -1986,11 +1726,11 @@ function drawHearts() {
     ctx.globalAlpha = 1.0;
 }
 
-// --- Финальные улучшения и оптимизации ---
+// --- Финальные оптимизации и улучшения ---
 
 // Предзагрузка эмодзи для лучшей производительности
 function preloadEmojis() {
-    const emojis = ["🍑", "🍌", "🍆", "🛏️", "🌹", "👨", "👩", "😎", "💖", "💔", "💊", "💋", "😘", "😊", "👴", "👴🏿", "💩", "👵", "😍", "🤢"];
+    const emojis = ["🍑", "🍌", "🍆", "🛏️", "🌹", "👨", "👩", "😎", "💖", "💔", "💊", "💋", "😘", "😊", "👴", "👴🏿"];
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d');
     tempCanvas.width = 50;
@@ -2002,9 +1742,6 @@ function preloadEmojis() {
         tempCtx.fillText(emoji, 0, 40);
     });
 }
-
-// Вызываем предзагрузку
-preloadEmojis();
 
 // Оптимизация для слабых устройств
 let lastTime = 0;
@@ -2033,12 +1770,6 @@ function optimizedDraw(timestamp) {
         lastTime = timestamp;
     }
     requestAnimationFrame(optimizedDraw);
-}
-
-// Переключаем на оптимизированный рендеринг для мобильных
-if (window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-    // Используем оптимизированный рендеринг для мобильных
-    draw = optimizedDraw;
 }
 
 // --- Улучшенная обработка ресайза с адаптацией ---
@@ -2071,8 +1802,6 @@ function enhancedResizeCanvas() {
         } else if (storyLevel === 3) {
             generateHeartBlocks();
             resetStoryLevel3();
-        } else if (storyLevel === 4) {
-            resetStoryLevel4();
         }
     }
 }
@@ -2092,6 +1821,30 @@ function vibrateIfSupported(duration = 50) {
         navigator.vibrate(duration);
     }
 }
+
+// --- Ограничение количества частиц для производительности ---
+const MAX_PARTICLES = 100;
+function optimizedCreateParticles(x, y, count, color) {
+    // Удаляем старые частицы если достигли лимита
+    if (particles.length + count > MAX_PARTICLES) {
+        particles.splice(0, count);
+    }
+    
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: x,
+            y: y,
+            dx: (Math.random() - 0.5) * 8,
+            dy: (Math.random() - 0.5) * 8,
+            size: Math.random() * 3 + 1,
+            color: color,
+            life: 1
+        });
+    }
+}
+
+// Применяем оптимизированную версию
+createParticles = optimizedCreateParticles;
 
 // --- Улучшенные переходы между состояниями ---
 function enhancedStartTransition(targetState) {
@@ -2125,46 +1878,35 @@ function enhancedStartTransition(targetState) {
 // Обновляем обработчик переходов
 startTransition = enhancedStartTransition;
 
-// --- Финальные оптимизации производительности ---
+// --- Запуск игры ---
 
-// Ограничение количества частиц
-const MAX_PARTICLES = 100;
-function optimizedCreateParticles(x, y, count, color, shouldVibrate = false) {
-    if (shouldVibrate) {
-        vibrateIfSupported(30);
-    }
-    
-    // Удаляем старые частицы если достигли лимита
-    if (particles.length + count > MAX_PARTICLES) {
-        particles.splice(0, count);
-    }
-    
-    for (let i = 0; i < count; i++) {
-        particles.push({
-            x: x,
-            y: y,
-            dx: (Math.random() - 0.5) * 8,
-            dy: (Math.random() - 0.5) * 8,
-            size: Math.random() * 3 + 1,
-            color: color,
-            life: 1
-        });
-    }
+// Обновляем инициализацию
+window.removeEventListener('load', initGame);
+document.removeEventListener('DOMContentLoaded', initGame);
+
+window.addEventListener('load', enhancedInitGameWithSound);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', enhancedInitGameWithSound);
+} else {
+    enhancedInitGameWithSound();
 }
 
-// Применяем оптимизированную версию
-createParticles = optimizedCreateParticles;
+// Переключаем на оптимизированный рендеринг для мобильных устройств
+if (window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    // Используем оптимизированный рендеринг для мобильных
+    draw = optimizedDraw;
+}
 
-// --- Завершение кода ---
-console.log("🎮 Бананоид успешно запущен! 🎮");
+// --- Финальные сообщения в консоль ---
+console.log("🎮 Бананоид с системными звуками успешно запущен! 🎵");
 console.log("Особенности игры:");
 console.log("🍑 - Режим 'Играть' с классическим арканоидом");
-console.log("📖 - Сюжетный режим с ЧЕТЫРЬМЯ уровнями");
+console.log("📖 - Сюжетный режим с тремя уровнями");
 console.log("💖 - Третий уровень с сердцем из смайликов");
-console.log("🎯 - Четвертый уровень с падающими блоками");
+console.log("🎯 - Адаптивный дизайн для мобильных устройств");
+console.log("🔊 - Полная система звукового сопровождения");
 console.log("✨ - Частицы и анимации для лучшего визуального опыта");
 console.log("📱 - Поддержка сенсорного управления и вибрации");
-console.log("🔊 - Полная звуковая система с 13 эффектами");
 
 // Экспорт для отладки (если нужно)
 if (typeof module !== 'undefined' && module.exports) {
@@ -2192,9 +1934,6 @@ window.gameDebug = {
         storyLevel2Score = 0;
         storyLevel3Lives = 3;
         storyLevel3Score = 0;
-        storyLevel4Lives = 3;
-        storyLevel4Score = 0;
-        storyLevel4GirlsCaught = 0;
         particles = [];
         storyHearts = [];
         grandpaHit = false;
@@ -2207,34 +1946,12 @@ window.gameDebug = {
         }
     },
     setStoryLevel: (level) => {
-        if (level >= 1 && level <= 4) {
+        if (level >= 1 && level <= 3) {
             storyLevel = level;
             if (storyLevel === 1) resetStoryLevel();
             else if (storyLevel === 2) resetStoryLevel2();
             else if (storyLevel === 3) resetStoryLevel3();
-            else if (storyLevel === 4) resetStoryLevel4();
         }
     },
-    sound: soundManager
+    soundManager: soundManager
 };
-
-// --- Проверка всех запрошенных изменений ---
-console.log("✅ Все запрошенные изменения реализованы:");
-console.log("1. ✅ В уровне с 'розой' девушка уворачивается 2 раза, на третье попадание - пройдено");
-console.log("2. ✅ В уровне с 'крутым в очках' при проигрыше показывается попап 'Ты разбил ей сердце'");
-console.log("3. ✅ В уровне с 'дедом' смайлики расположены в форме сердца, полностью на экране");
-console.log("4. ✅ Полная звуковая система интегрирована во все уровни игры");
-console.log("5. ✅ Добавлена кнопка управления звуком в меню");
-console.log("6. ✅ ДОБАВЛЕН ЧЕТВЕРТЫЙ УРОВЕНЬ с падающими блоками:");
-console.log("   - 👩 Девушка: меняет смайлик на 😍, нужно поймать 5 для победы");
-console.log("   - 💩 Какашка: меняет смайлик на 🤢, жизнь не отнимается");
-console.log("   - 👵 Старуха: отнимает жизнь, показывает попап 'Уф... А было неплохо'");
-
-// Финальная проверка инициализации
-window.addEventListener('load', function() {
-    setTimeout(() => {
-        console.log("🎵 Звуковая система:", soundManager.enabled ? "ВКЛЮЧЕНА" : "ВЫКЛЮЧЕНА");
-        console.log("📱 Размер экрана:", canvas.width + "x" + canvas.height);
-        console.log("🎮 Игра готова к использованию!");
-    }, 1000);
-});
