@@ -277,7 +277,7 @@ function drawPopup(text, buttons) {
         btn.area = {x: bx, y: by, w: btnWidth, h: 50};
     });
 
-    return { buttons, text };
+    return { buttons, text, x, y, w, h };
 }
 
 // --- Меню ---
@@ -402,9 +402,48 @@ function drawPlay() {
         }
     }
 
-    if (showWinPopup) drawWinPopup();
-    else if (showLoseLifePopup) drawLoseLifePopup();
-    else if (showGameOverPopup) drawGameOverPopup();
+    // Рисуем попапы
+    if (showWinPopup) {
+        drawPopup("Ты Гигант! 💪", [
+            {text:"Еще раз", color:"#4CAF50", onClick:()=>{
+                showWinPopup = false;
+                playLives = 3;
+                playScore = 0;
+                generateBlocks();
+                resetBallPaddle();
+            }},
+            {text:"Выйти", color:"#f44336", onClick:()=>{
+                showWinPopup = false;
+                gameState = "menu";
+            }}
+        ]);
+    } else if (showLoseLifePopup) {
+        drawPopup("Ням 💊", [
+            {text:"Принять", color:"#4CAF50", onClick:()=>{
+                showLoseLifePopup = false;
+                playLives--;
+                resetBallPaddle();
+            }},
+            {text:"Выйти", color:"#f44336", onClick:()=>{
+                showLoseLifePopup = false;
+                gameState = "menu";
+            }}
+        ]);
+    } else if (showGameOverPopup) {
+        drawPopup("Ты сражался, как тигр 🐯", [
+            {text:"Еще раз", color:"#4CAF50", onClick:()=>{
+                showGameOverPopup = false;
+                playLives = 3;
+                playScore = 0;
+                generateBlocks();
+                resetBallPaddle();
+            }},
+            {text:"Выйти", color:"#f44336", onClick:()=>{
+                showGameOverPopup = false;
+                gameState = "menu";
+            }}
+        ]);
+    }
 }
 
 function resetBallPaddle() {
@@ -417,52 +456,6 @@ function resetBallPaddle() {
     paddle.height = 30;
     paddle.x = canvas.width/2 - paddle.width/2;
     paddle.y = canvas.height - 50;
-}
-
-function drawGameOverPopup() {
-    drawPopup("Ты сражался, как тигр 🐯", [
-        {text:"Еще раз", color:"#4CAF50", onClick:()=>{
-            showGameOverPopup = false;
-            playLives = 3;
-            playScore = 0;
-            generateBlocks();
-            resetBallPaddle();
-        }},
-        {text:"Выйти", color:"#f44336", onClick:()=>{
-            showGameOverPopup = false;
-            gameState = "menu";
-        }}
-    ]);
-}
-
-function drawWinPopup() {
-    drawPopup("Ты Гигант! 💪", [
-        {text:"Еще раз", color:"#4CAF50", onClick:()=>{
-            showWinPopup = false;
-            playLives = 3;
-            playScore = 0;
-            generateBlocks();
-            resetBallPaddle();
-        }},
-        {text:"Выйти", color:"#f44336", onClick:()=>{
-            showWinPopup = false;
-            gameState = "menu";
-        }}
-    ]);
-}
-
-function drawLoseLifePopup() {
-    drawPopup("Ням 💊", [
-        {text:"Принять", color:"#4CAF50", onClick:()=>{
-            showLoseLifePopup = false;
-            playLives--;
-            resetBallPaddle();
-        }},
-        {text:"Выйти", color:"#f44336", onClick:()=>{
-            showLoseLifePopup = false;
-            gameState = "menu";
-        }}
-    ]);
 }
 
 // --- СЮЖЕТНЫЙ РЕЖИМ ---
@@ -616,12 +609,12 @@ function drawStory() {
     }
 }
 
-// --- Улучшенный обработчик кликов для iOS ---
+// --- Улучшенный обработчик кликов ---
 function handleClick(e) {
     let x, y;
     
-    if (e.type === 'touchstart' || e.type === 'touchmove' || e.type === 'touchend') {
-        const touch = e.touches[0] || e.changedTouches[0];
+    if (e.type === 'touchstart' || e.type === 'touchend') {
+        const touch = e.touches && e.touches[0] ? e.touches[0] : e.changedTouches[0];
         x = touch.clientX;
         y = touch.clientY;
     } else {
@@ -642,28 +635,136 @@ function handleClick(e) {
 
     // Обработка попапов сюжетного режима
     if (gameState === "story" && storyPopup) {
+        let clicked = false;
         storyPopup.buttons.forEach(btn => {
             if (btn.area && x >= btn.area.x && x <= btn.area.x + btn.area.w &&
                 y >= btn.area.y && y <= btn.area.y + btn.area.h) {
                 btn.onClick();
+                clicked = true;
                 e.preventDefault();
-                return;
             }
         });
+        if (clicked) return;
     }
 
     // Обработка попапов игрового режима
     if (gameState === "play") {
-        if (showWinPopup || showLoseLifePopup || showGameOverPopup) {
-            const popup = drawPopup("", []);
-            popup.buttons.forEach(btn => {
-                if (btn.area && x >= btn.area.x && x <= btn.area.x + btn.area.w &&
-                    y >= btn.area.y && y <= btn.area.y + btn.area.h) {
-                    btn.onClick();
+        // Попап победы
+        if (showWinPopup) {
+            const popupArea = {
+                x: (canvas.width - Math.min(400, canvas.width - 40)) / 2,
+                y: (canvas.height - 220) / 2,
+                w: Math.min(400, canvas.width - 40),
+                h: 220
+            };
+            
+            if (x >= popupArea.x && x <= popupArea.x + popupArea.w &&
+                y >= popupArea.y && y <= popupArea.y + popupArea.h) {
+                
+                const btnWidth = 120;
+                const btnSpacing = 20;
+                const totalWidth = 2 * btnWidth + btnSpacing;
+                const startX = canvas.width/2 - totalWidth/2;
+                
+                // Кнопка "Еще раз"
+                if (x >= startX && x <= startX + btnWidth && 
+                    y >= popupArea.y + 130 && y <= popupArea.y + 130 + 50) {
+                    showWinPopup = false;
+                    playLives = 3;
+                    playScore = 0;
+                    generateBlocks();
+                    resetBallPaddle();
                     e.preventDefault();
                     return;
                 }
-            });
+                
+                // Кнопка "Выйти"
+                if (x >= startX + btnWidth + btnSpacing && x <= startX + btnWidth + btnSpacing + btnWidth && 
+                    y >= popupArea.y + 130 && y <= popupArea.y + 130 + 50) {
+                    showWinPopup = false;
+                    gameState = "menu";
+                    e.preventDefault();
+                    return;
+                }
+            }
+        }
+        
+        // Попап потери жизни
+        if (showLoseLifePopup) {
+            const popupArea = {
+                x: (canvas.width - Math.min(400, canvas.width - 40)) / 2,
+                y: (canvas.height - 220) / 2,
+                w: Math.min(400, canvas.width - 40),
+                h: 220
+            };
+            
+            if (x >= popupArea.x && x <= popupArea.x + popupArea.w &&
+                y >= popupArea.y && y <= popupArea.y + popupArea.h) {
+                
+                const btnWidth = 120;
+                const btnSpacing = 20;
+                const totalWidth = 2 * btnWidth + btnSpacing;
+                const startX = canvas.width/2 - totalWidth/2;
+                
+                // Кнопка "Принять"
+                if (x >= startX && x <= startX + btnWidth && 
+                    y >= popupArea.y + 130 && y <= popupArea.y + 130 + 50) {
+                    showLoseLifePopup = false;
+                    playLives--;
+                    resetBallPaddle();
+                    e.preventDefault();
+                    return;
+                }
+                
+                // Кнопка "Выйти"
+                if (x >= startX + btnWidth + btnSpacing && x <= startX + btnWidth + btnSpacing + btnWidth && 
+                    y >= popupArea.y + 130 && y <= popupArea.y + 130 + 50) {
+                    showLoseLifePopup = false;
+                    gameState = "menu";
+                    e.preventDefault();
+                    return;
+                }
+            }
+        }
+        
+        // Попап Game Over
+        if (showGameOverPopup) {
+            const popupArea = {
+                x: (canvas.width - Math.min(400, canvas.width - 40)) / 2,
+                y: (canvas.height - 220) / 2,
+                w: Math.min(400, canvas.width - 40),
+                h: 220
+            };
+            
+            if (x >= popupArea.x && x <= popupArea.x + popupArea.w &&
+                y >= popupArea.y && y <= popupArea.y + popupArea.h) {
+                
+                const btnWidth = 120;
+                const btnSpacing = 20;
+                const totalWidth = 2 * btnWidth + btnSpacing;
+                const startX = canvas.width/2 - totalWidth/2;
+                
+                // Кнопка "Еще раз"
+                if (x >= startX && x <= startX + btnWidth && 
+                    y >= popupArea.y + 130 && y <= popupArea.y + 130 + 50) {
+                    showGameOverPopup = false;
+                    playLives = 3;
+                    playScore = 0;
+                    generateBlocks();
+                    resetBallPaddle();
+                    e.preventDefault();
+                    return;
+                }
+                
+                // Кнопка "Выйти"
+                if (x >= startX + btnWidth + btnSpacing && x <= startX + btnWidth + btnSpacing + btnWidth && 
+                    y >= popupArea.y + 130 && y <= popupArea.y + 130 + 50) {
+                    showGameOverPopup = false;
+                    gameState = "menu";
+                    e.preventDefault();
+                    return;
+                }
+            }
         }
     }
 
