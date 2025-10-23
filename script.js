@@ -116,14 +116,15 @@ function generateBlocks() {
     const rows = 3;
     const spacing = 10;
     const blockSize = 40;
-    const startX = (canvas.width - (cols * blockSize + (cols-1)*spacing))/2;
+    const totalWidth = cols * blockSize + (cols - 1) * spacing;
+    const startX = (canvas.width - totalWidth) / 2;
     const startY = 100;
 
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
             blocks.push({
-                x: startX + c*(blockSize+spacing),
-                y: startY + r*(blockSize+spacing),
+                x: startX + c * (blockSize + spacing),
+                y: startY + r * (blockSize + spacing),
                 size: blockSize,
                 destroyed: false
             });
@@ -137,14 +138,17 @@ function generateStoryBlocks() {
     const rows = 3;
     const spacing = 10;
     const blockSize = 40;
-    const startX = (canvas.width - (cols * blockSize + (cols-1)*spacing))/2;
+    
+    // ИСПРАВЛЕНИЕ: Правильный расчет начальной позиции по X
+    const totalWidth = cols * blockSize + (cols - 1) * spacing;
+    const startX = (canvas.width - totalWidth) / 2;
     const startY = 100;
 
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
             storyBlocks.push({
-                x: startX + c*(blockSize+spacing),
-                y: startY + r*(blockSize+spacing),
+                x: startX + c * (blockSize + spacing),
+                y: startY + r * (blockSize + spacing),
                 size: blockSize,
                 destroyed: false,
                 emoji: "👩"
@@ -188,6 +192,8 @@ function resizeCanvas() {
         if (storyLevel === 1) {
             resetStoryLevel();
         } else if (storyLevel === 2) {
+            // ИСПРАВЛЕНИЕ: Добавляем перегенерацию блоков при ресайзе
+            generateStoryBlocks();
             resetStoryLevel2();
         }
     }
@@ -516,6 +522,7 @@ function resetStoryLevel2() {
     storyLevel2Lives = 3;
     storyLevel2Score = 0;
     
+    // ИСПРАВЛЕНИЕ: Всегда пересоздаем блоки при сбросе
     generateStoryBlocks();
 }
 
@@ -603,7 +610,7 @@ function drawStoryLevel2() {
     });
 
     if (storyBlocks.every(block => block.destroyed)) {
-        storyPopup = drawPopup("Ты покорил все сердца! 💖", [
+        storyPopup = drawPopup("Ты покоритель сердец! 💖", [
             {text:"В меню", color:"#4CAF50", onClick:()=>{
                 exitToMenu();
             }}
@@ -976,51 +983,6 @@ if (document.readyState === 'loading') {
 } else {
     initGame();
 }
-// --- Главный игровой цикл ---
-function draw() {
-    // Очищаем canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Рисуем текущее состояние игры
-    if (gameState === "menu") {
-        drawMenu();
-    } else if (gameState === "arcanoid") {
-        drawArcanoid();
-    } else if (gameState === "play") {
-        drawPlay();
-    } else if (gameState === "story") {
-        drawStory();
-    }
-
-    // Рисуем затемнение при переходе
-    if (isTransitioning) {
-        ctx.fillStyle = `rgba(0, 0, 0, ${fadeOpacity})`;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-
-    // Запускаем следующий кадр
-    requestAnimationFrame(draw);
-}
-
-// --- Инициализация игры ---
-function initGame() {
-    resizeCanvas();
-    generateBlocks();
-    resetBallPaddle();
-    generateBedGrid();
-    draw();
-}
-
-// Запускаем игру когда страница загрузится
-window.addEventListener('load', initGame);
-
-// Также запускаем при готовности DOM
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initGame);
-} else {
-    initGame();
-}
-
 // --- Дополнительные улучшения для мобильных устройств ---
 
 // Предотвращение скролла на iOS
@@ -1102,6 +1064,8 @@ function adaptSizes() {
         storyLevel2Ball.size = 25;
         storyLevel2Paddle.width = 70;
         storyLevel2Paddle.height = 25;
+        
+        storyGirl.size = 50;
     } else {
         // Десктопные настройки
         ball.size = 30;
@@ -1115,6 +1079,8 @@ function adaptSizes() {
         storyLevel2Ball.size = 30;
         storyLevel2Paddle.width = 90;
         storyLevel2Paddle.height = 30;
+        
+        storyGirl.size = 60;
     }
 }
 
@@ -1624,8 +1590,307 @@ if (window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobi
     draw = optimizedDraw;
 }
 
-// Финальная инициализация
-console.log("🍑 Бананоид успешно запущен! 🍌");
+// --- Улучшенная обработка ресайза с адаптацией ---
+function enhancedResizeCanvas() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    
+    canvas.width = width;
+    canvas.height = height;
+    
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+
+    maleY = height - 50;
+    femaleY = height - 50;
+
+    generateBedGrid();
+    adaptSizes();
+    
+    if (gameState === "play") {
+        resetBallPaddle();
+        generateBlocks();
+    }
+    if (gameState === "story" && storyStarted) {
+        if (storyLevel === 1) {
+            resetStoryLevel();
+        } else if (storyLevel === 2) {
+            generateStoryBlocks();
+            resetStoryLevel2();
+        }
+    }
+}
+
+// Обновляем обработчик ресайза
+window.removeEventListener("resize", resizeCanvas);
+window.addEventListener("resize", function() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(enhancedResizeCanvas, 100);
+});
+
+// --- Улучшенная инициализация ---
+function enhancedInitGame() {
+    enhancedResizeCanvas();
+    generateBlocks();
+    resetBallPaddle();
+    generateBedGrid();
+    adaptSizes();
+    preloadEmojis();
+    draw();
+}
+
+// Обновляем инициализацию
+window.removeEventListener('load', initGame);
+document.removeEventListener('DOMContentLoaded', initGame);
+
+window.addEventListener('load', enhancedInitGame);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', enhancedInitGame);
+} else {
+    enhancedInitGame();
+}
+
+// --- Дополнительные улучшения UX ---
+
+// Виброотклик на мобильных устройствах
+function vibrateIfSupported(duration = 50) {
+    if (navigator.vibrate) {
+        navigator.vibrate(duration);
+    }
+}
+
+// Добавляем вибрацию при столкновениях
+function enhancedCreateParticles(x, y, count, color, shouldVibrate = false) {
+    if (shouldVibrate) {
+        vibrateIfSupported(30);
+    }
+    createParticles(x, y, count, color);
+}
+
+// Обновляем вызовы createParticles для использования вибрации
+const originalCreateParticles = createParticles;
+createParticles = enhancedCreateParticles;
+
+// --- Улучшенные переходы между состояниями ---
+function enhancedStartTransition(targetState) {
+    isTransitioning = true;
+    fadeOpacity = 0;
+
+    const fadeOut = setInterval(() => {
+        fadeOpacity += 0.05;
+        if (fadeOpacity >= 1) {
+            clearInterval(fadeOut);
+            
+            // Очищаем частицы при переходе
+            particles = [];
+            storyHearts = [];
+            heartAnimationProgress = 0;
+            
+            if (targetState === "play") startPlay();
+            if (targetState === "story") startStory();
+
+            const fadeIn = setInterval(() => {
+                fadeOpacity -= 0.05;
+                if (fadeOpacity <= 0) {
+                    clearInterval(fadeIn);
+                    isTransitioning = false;
+                }
+            }, 30);
+        }
+    }, 30);
+}
+
+// Обновляем обработчик переходов
+startTransition = enhancedStartTransition;
+
+// --- Улучшенная обработка кликов для попапов ---
+function enhancedHandleClick(e) {
+    e.preventDefault();
+    
+    let x, y;
+    
+    if (e.type.includes('touch')) {
+        const touch = e.touches && e.touches[0] ? e.touches[0] : e.changedTouches[0];
+        x = touch.clientX;
+        y = touch.clientY;
+        vibrateIfSupported(20); // Вибрация при касании
+    } else {
+        x = e.clientX;
+        y = e.clientY;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    x = x - rect.left;
+    y = y - rect.top;
+
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    x *= scaleX;
+    y *= scaleY;
+
+    // Обработка попапов сюжетного режима
+    if (gameState === "story" && storyPopup) {
+        let clicked = false;
+        storyPopup.buttons.forEach(btn => {
+            if (btn.area && x >= btn.area.x && x <= btn.area.x + btn.area.w &&
+                y >= btn.area.y && y <= btn.area.y + btn.area.h) {
+                vibrateIfSupported(30);
+                btn.onClick();
+                clicked = true;
+            }
+        });
+        if (clicked) return;
+    }
+
+    // Обработка попапов игрового режима
+    if (gameState === "play") {
+        const handlePlayPopup = (popupButtons) => {
+            const popupArea = {
+                x: (canvas.width - Math.min(400, canvas.width - 40)) / 2,
+                y: (canvas.height - 220) / 2,
+                w: Math.min(400, canvas.width - 40),
+                h: 220
+            };
+            
+            if (x >= popupArea.x && x <= popupArea.x + popupArea.w &&
+                y >= popupArea.y && y <= popupArea.y + popupArea.h) {
+                
+                const btnWidth = 120;
+                const btnSpacing = 20;
+                const totalWidth = 2 * btnWidth + btnSpacing;
+                const startX = canvas.width/2 - totalWidth/2;
+                
+                for (let i = 0; i < popupButtons.length; i++) {
+                    const btnX = startX + i * (btnWidth + btnSpacing);
+                    if (x >= btnX && x <= btnX + btnWidth && 
+                        y >= popupArea.y + 130 && y <= popupArea.y + 130 + 50) {
+                        vibrateIfSupported(30);
+                        popupButtons[i]();
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+
+        if (showWinPopup) {
+            if (handlePlayPopup([
+                () => {
+                    showWinPopup = false;
+                    playLives = 3;
+                    playScore = 0;
+                    generateBlocks();
+                    resetBallPaddle();
+                    particles = [];
+                },
+                () => {
+                    showWinPopup = false;
+                    gameState = "menu";
+                    particles = [];
+                }
+            ])) return;
+        }
+        
+        if (showLoseLifePopup) {
+            if (handlePlayPopup([
+                () => {
+                    showLoseLifePopup = false;
+                    playLives--;
+                    resetBallPaddle();
+                    particles = [];
+                },
+                () => {
+                    showLoseLifePopup = false;
+                    gameState = "menu";
+                    particles = [];
+                }
+            ])) return;
+        }
+        
+        if (showGameOverPopup) {
+            if (handlePlayPopup([
+                () => {
+                    showGameOverPopup = false;
+                    playLives = 3;
+                    playScore = 0;
+                    generateBlocks();
+                    resetBallPaddle();
+                    particles = [];
+                },
+                () => {
+                    showGameOverPopup = false;
+                    gameState = "menu";
+                    particles = [];
+                }
+            ])) return;
+        }
+    }
+
+    // Меню
+    if (gameState === "menu" && !isTransitioning) {
+        const buttonWidth = Math.min(240, canvas.width * 0.6);
+        const buttonHeight = Math.min(120, canvas.height * 0.15);
+        
+        if (x >= canvas.width/2 - buttonWidth/2 && x <= canvas.width/2 + buttonWidth/2 &&
+            y >= canvas.height*0.3 && y <= canvas.height*0.3 + buttonHeight) {
+            vibrateIfSupported(40);
+            startTransition("play");
+            return;
+        }
+        
+        if (x >= canvas.width/2 - buttonWidth/2 && x <= canvas.width/2 + buttonWidth/2 &&
+            y >= canvas.height*0.5 && y <= canvas.height*0.5 + buttonHeight * 0.7) {
+            vibrateIfSupported(40);
+            startTransition("story");
+            return;
+        }
+    }
+}
+
+// Обновляем обработчик кликов
+canvas.removeEventListener("click", handleClick);
+canvas.removeEventListener("touchstart", handleClick);
+canvas.addEventListener("click", enhancedHandleClick);
+canvas.addEventListener("touchstart", enhancedHandleClick);
+
+// --- Финальные оптимизации производительности ---
+
+// Ограничение количества частиц
+const MAX_PARTICLES = 100;
+function optimizedCreateParticles(x, y, count, color, shouldVibrate = false) {
+    if (shouldVibrate) {
+        vibrateIfSupported(30);
+    }
+    
+    // Удаляем старые частицы если достигли лимита
+    if (particles.length + count > MAX_PARTICLES) {
+        particles.splice(0, count);
+    }
+    
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: x,
+            y: y,
+            dx: (Math.random() - 0.5) * 8,
+            dy: (Math.random() - 0.5) * 8,
+            size: Math.random() * 3 + 1,
+            color: color,
+            life: 1
+        });
+    }
+}
+
+// Применяем оптимизированную версию
+createParticles = optimizedCreateParticles;
+
+// --- Завершение кода ---
+console.log("🎮 Бананоид успешно запущен! 🎮");
+console.log("Особенности игры:");
+console.log("🍑 - Режим 'Играть' с классическим арканоидом");
+console.log("📖 - Сюжетный режим с двумя уровнями");
+console.log("🎯 - Адаптивный дизайн для мобильных устройств");
+console.log("✨ - Частицы и анимации для лучшего визуального опыта");
+console.log("📱 - Поддержка сенсорного управления и вибрации");
 
 // Экспорт для отладки (если нужно)
 if (typeof module !== 'undefined' && module.exports) {
@@ -1634,6 +1899,29 @@ if (typeof module !== 'undefined' && module.exports) {
         startPlay,
         startStory,
         exitToMenu,
-        resizeCanvas
+        resizeCanvas: enhancedResizeCanvas,
+        adaptSizes
     };
 }
+
+// Глобальные объекты для отладки
+window.gameDebug = {
+    state: () => gameState,
+    reset: () => {
+        gameState = "menu";
+        storyStarted = false;
+        storyLevel = 1;
+        playLives = 3;
+        playScore = 0;
+        storyLevel2Lives = 3;
+        storyLevel2Score = 0;
+        particles = [];
+        storyHearts = [];
+        enhancedResizeCanvas();
+    },
+    setState: (state) => {
+        if (["menu", "play", "story", "arcanoid"].includes(state)) {
+            gameState = state;
+        }
+    }
+};
