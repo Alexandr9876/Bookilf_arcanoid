@@ -58,6 +58,17 @@ let showLoseLifePopup = false;
 const bedEmoji = "🛏️";
 let bedGrid = [];
 
+// --- СЮЖЕТНЫЙ РЕЖИМ ---
+let storyLevel = 0;
+let storyPopup = null;
+let storyStarted = false;
+let storyGirl = { x: 0, y: 0, size: 60, dodges: 0, maxDodges: 5, hit: false };
+let storyBall = { x: 0, y: 0, dx: 0, dy: 0, size: 30, emoji: "🌹" };
+let storyPaddle = { x: 0, y: 0, width: 80, height: 30, emoji: "👨" };
+let storyHearts = [];
+let heartAnimationProgress = 0;
+let heartAnimationDuration = 120; // кадров
+
 function generateBedGrid() {
     bedGrid = [];
     const emojiSize = 60;
@@ -120,6 +131,9 @@ function resizeCanvas() {
     if (gameState === "play") {
         resetBallPaddle();
         generateBlocks();
+    }
+    if (gameState === "story" && storyStarted) {
+        resetStoryLevel();
     }
 }
 
@@ -187,6 +201,46 @@ function drawButtonStringPanties(x, y, w, h, color, text, textSize) {
     ctx.fillText(text, x + w/2, y + h/2);
 }
 
+// --- Универсальный попап ---
+function drawPopup(text, buttons) {
+    const w = 400, h = 220;
+    const x = canvas.width/2 - w/2;
+    const y = canvas.height/2 - h/2;
+
+    ctx.fillStyle = "rgba(0,0,0,0.8)";
+    ctx.fillRect(x, y, w, h);
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "22px Arial";
+    ctx.textAlign = "center";
+    
+    // Перенос строк если текст длинный
+    const lines = text.split('\n');
+    lines.forEach((line, i) => {
+        ctx.fillText(line, canvas.width/2, y + 60 + i * 30);
+    });
+
+    buttons.forEach((btn, i) => {
+        const btnWidth = 120;
+        const btnSpacing = 40;
+        const totalWidth = buttons.length * btnWidth + (buttons.length - 1) * btnSpacing;
+        const startX = canvas.width/2 - totalWidth/2;
+        
+        const bx = startX + i * (btnWidth + btnSpacing);
+        const by = y + 130;
+        
+        ctx.fillStyle = btn.color;
+        ctx.fillRect(bx, by, btnWidth, 50);
+        ctx.fillStyle = "#fff";
+        ctx.font = "18px Arial";
+        ctx.fillText(btn.text, bx + btnWidth/2, by + 30);
+        
+        btn.area = {x: bx, y: by, w: btnWidth, h: 50};
+    });
+
+    return { buttons };
+}
+
 // --- Меню ---
 function drawMenu() {
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
@@ -197,7 +251,7 @@ function drawMenu() {
 
     drawBedBackground();
 
-    const title = "🍑 Бананоид 🍌";
+    const title = "🍑 Уфноид 🍌";
     let fontSize = 56; 
     ctx.font = `${fontSize}px 'Segoe UI Emoji', Arial`;
     let textWidth = ctx.measureText(title).width;
@@ -329,7 +383,7 @@ function drawPlay() {
 function resetBallPaddle() {
     ball.x = canvas.width/2;
     ball.y = canvas.height/2;
-    ball.dx = 4 * (Math.random() > 0.5 ? 1 : -1); // Случайное направление
+    ball.dx = 4 * (Math.random() > 0.5 ? 1 : -1);
     ball.dy = -4;
 
     paddle.width = 90;
@@ -339,75 +393,216 @@ function resetBallPaddle() {
 }
 
 function drawGameOverPopup() {
-    const w = 300, h = 180;
-    const x = canvas.width/2 - w/2;
-    const y = canvas.height/2 - h/2;
-
-    ctx.fillStyle = "rgba(0,0,0,0.8)";
-    ctx.fillRect(x, y, w, h);
-
-    ctx.fillStyle = "#fff";
-    ctx.font = "20px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("Ты сражался, как тигр 🐯", canvas.width/2, y + 50);
-
-    ctx.fillStyle = "#4CAF50";
-    ctx.fillRect(x + 40, y + 100, 90, 40);
-    ctx.fillStyle = "#fff";
-    ctx.fillText("Еще раз", x + 40 + 45, y + 120);
-
-    ctx.fillStyle = "#f44336";
-    ctx.fillRect(x + 170, y + 100, 90, 40);
-    ctx.fillStyle = "#fff";
-    ctx.fillText("Выйти", x + 170 + 45, y + 120);
+    drawPopup("Ты сражался, как тигр 🐯", [
+        {text:"Еще раз", color:"#4CAF50", onClick:()=>{
+            showGameOverPopup = false;
+            playLives = 3;
+            playScore = 0;
+            generateBlocks();
+            resetBallPaddle();
+        }},
+        {text:"Выйти", color:"#f44336", onClick:()=>{
+            showGameOverPopup = false;
+            gameState = "menu";
+        }}
+    ]);
 }
 
 function drawWinPopup() {
-    const w = 300, h = 180;
-    const x = canvas.width/2 - w/2;
-    const y = canvas.height/2 - h/2;
-
-    ctx.fillStyle = "rgba(0,0,0,0.8)";
-    ctx.fillRect(x, y, w, h);
-
-    ctx.fillStyle = "#fff";
-    ctx.font = "20px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("Ты Гигант! 💪", canvas.width/2, y + 50);
-
-    ctx.fillStyle = "#4CAF50";
-    ctx.fillRect(x + 40, y + 100, 90, 40);
-    ctx.fillStyle = "#fff";
-    ctx.fillText("Еще раз", x + 40 + 45, y + 120);
-
-    ctx.fillStyle = "#f44336";
-    ctx.fillRect(x + 170, y + 100, 90, 40);
-    ctx.fillStyle = "#fff";
-    ctx.fillText("Выйти", x + 170 + 45, y + 120);
+    drawPopup("Ты Гигант! 💪", [
+        {text:"Еще раз", color:"#4CAF50", onClick:()=>{
+            showWinPopup = false;
+            playLives = 3;
+            playScore = 0;
+            generateBlocks();
+            resetBallPaddle();
+        }},
+        {text:"Выйти", color:"#f44336", onClick:()=>{
+            showWinPopup = false;
+            gameState = "menu";
+        }}
+    ]);
 }
 
 function drawLoseLifePopup() {
-    const w = 300, h = 180;
-    const x = canvas.width/2 - w/2;
-    const y = canvas.height/2 - h/2;
+    drawPopup("Ням 💊", [
+        {text:"Принять", color:"#4CAF50", onClick:()=>{
+            showLoseLifePopup = false;
+            playLives--;
+            resetBallPaddle();
+        }},
+        {text:"Выйти", color:"#f44336", onClick:()=>{
+            showLoseLifePopup = false;
+            gameState = "menu";
+        }}
+    ]);
+}
 
-    ctx.fillStyle = "rgba(0,0,0,0.8)";
-    ctx.fillRect(x, y, w, h);
+// --- СЮЖЕТНЫЙ РЕЖИМ ---
+function resetStoryLevel() {
+    storyGirl.x = canvas.width/2 - storyGirl.size/2;
+    storyGirl.y = 150;
+    storyGirl.dodges = 0;
+    storyGirl.hit = false;
+    
+    storyBall.x = canvas.width/2;
+    storyBall.y = canvas.height/2;
+    storyBall.dx = 4 * (Math.random() > 0.5 ? 1 : -1);
+    storyBall.dy = -4;
+    
+    storyPaddle.x = canvas.width/2 - storyPaddle.width/2;
+    storyPaddle.y = canvas.height - 60;
+    
+    storyHearts = [];
+    heartAnimationProgress = 0;
+}
 
-    ctx.fillStyle = "#fff";
-    ctx.font = "20px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("Ням 💊", canvas.width/2, y + 50);
+function drawStory() {
+    // Фон сна - темный с звездами
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, "#1a1a2e");
+    gradient.addColorStop(1, "#16213e");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = "#4CAF50";
-    ctx.fillRect(x + 40, y + 100, 90, 40);
-    ctx.fillStyle = "#fff";
-    ctx.fillText("Принять", x + 40 + 45, y + 120);
+    // Рисуем звезды на фоне
+    ctx.fillStyle = "white";
+    ctx.globalAlpha = 0.3;
+    for(let i = 0; i < 50; i++) {
+        const x = (i * 137) % canvas.width;
+        const y = (i * 79) % canvas.height;
+        ctx.fillRect(x, y, 2, 2);
+    }
+    ctx.globalAlpha = 1.0;
 
-    ctx.fillStyle = "#f44336";
-    ctx.fillRect(x + 170, y + 100, 90, 40);
-    ctx.fillStyle = "#fff";
-    ctx.fillText("Выйти", x + 170 + 45, y + 120);
+    if (!storyStarted) {
+        // Показываем попап начала сна
+        storyPopup = drawPopup("Тебе снится сон...", [
+            {text:"Начать", color:"#4CAF50", onClick:()=>{
+                storyStarted = true;
+                storyPopup = null;
+                resetStoryLevel();
+            }}
+        ]);
+        return;
+    }
+
+    if (storyPopup) {
+        drawPopup(storyPopup.text, storyPopup.buttons);
+        return;
+    }
+
+    // Девушка (уворачивающаяся)
+    ctx.font = `${storyGirl.size}px 'Segoe UI Emoji', Arial`;
+    ctx.fillText("👩", storyGirl.x, storyGirl.y);
+
+    // Роза (шарик)
+    ctx.font = `${storyBall.size}px 'Segoe UI Emoji', Arial`;
+    ctx.fillText(storyBall.emoji, storyBall.x, storyBall.y);
+
+    // Парень (платформа)
+    ctx.textBaseline = "bottom";
+    ctx.font = `${storyPaddle.height*2}px 'Segoe UI Emoji', Arial`;
+    ctx.fillText(storyPaddle.emoji, storyPaddle.x, storyPaddle.y);
+    ctx.textBaseline = "top";
+
+    // Анимация сердечек после попадания
+    if (storyGirl.hit && heartAnimationProgress < heartAnimationDuration) {
+        heartAnimationProgress++;
+        const progress = heartAnimationProgress / heartAnimationDuration;
+        
+        // Создаем новые сердечки
+        if (heartAnimationProgress % 5 === 0 && storyHearts.length < 30) {
+            storyHearts.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: 20 + Math.random() * 30,
+                opacity: 0
+            });
+        }
+        
+        // Анимируем сердечки
+        storyHearts.forEach(heart => {
+            heart.opacity = Math.min(heart.opacity + 0.02, 1);
+            ctx.globalAlpha = heart.opacity;
+            ctx.font = `${heart.size}px 'Segoe UI Emoji', Arial`;
+            ctx.fillText("❤️", heart.x, heart.y);
+        });
+        ctx.globalAlpha = 1.0;
+        
+        // Когда анимация завершена, показываем попап
+        if (heartAnimationProgress >= heartAnimationDuration && !storyPopup) {
+            storyPopup = drawPopup("Пора сон сделать явью", [
+                {text:"Проснуться", color:"#4CAF50", onClick:()=>{
+                    storyPopup = drawPopup("Скоро. В разработке", [
+                        {text:"В меню", color:"#4CAF50", onClick:()=>{
+                            gameState = "menu";
+                            storyStarted = false;
+                            storyPopup = null;
+                        }}
+                    ]);
+                }}
+            ]);
+        }
+        return;
+    }
+
+    // Движение розы
+    if (!storyGirl.hit) {
+        storyBall.x += storyBall.dx;
+        storyBall.y += storyBall.dy;
+
+        // Столкновение со стенами
+        if (storyBall.x < 0 || storyBall.x > canvas.width - storyBall.size) {
+            storyBall.dx = -storyBall.dx;
+        }
+        if (storyBall.y < 0) {
+            storyBall.dy = -storyBall.dy;
+        }
+
+        // Столкновение с платформой
+        if (storyBall.y + storyBall.size >= storyPaddle.y - 40 &&
+            storyBall.x > storyPaddle.x && storyBall.x < storyPaddle.x + storyPaddle.width) {
+            storyBall.dy = -storyBall.dy;
+        }
+
+        // Столкновение с девушкой
+        if (!storyGirl.hit &&
+            storyBall.x + storyBall.size > storyGirl.x &&
+            storyBall.x < storyGirl.x + storyGirl.size &&
+            storyBall.y + storyBall.size > storyGirl.y &&
+            storyBall.y < storyGirl.y + storyGirl.size) {
+            
+            // Девушка уворачивается 5 раз
+            if (storyGirl.dodges < storyGirl.maxDodges) {
+                storyGirl.dodges++;
+                // Перемещаем девушку в случайное место
+                storyGirl.x = Math.random() * (canvas.width - storyGirl.size);
+                storyGirl.y = 100 + Math.random() * 200;
+                storyBall.dy = -storyBall.dy;
+            } else {
+                // Попадание после 5 уворотов
+                storyGirl.hit = true;
+                storyBall.dx = 0;
+                storyBall.dy = 0;
+            }
+        }
+
+        // Падение розы - проигрыш
+        if (storyBall.y > canvas.height && !storyPopup) {
+            storyPopup = drawPopup("Подкат не удался", [
+                {text:"Повторить", color:"#4CAF50", onClick:()=>{
+                    storyPopup = null;
+                    resetStoryLevel();
+                }},
+                {text:"Выйти", color:"#f44336", onClick:()=>{
+                    gameState = "menu";
+                    storyStarted = false;
+                    storyPopup = null;
+                }}
+            ]);
+        }
+    }
 }
 
 // --- Обработчик кликов ---
@@ -415,69 +610,55 @@ function handleClick(e) {
     const x = e.clientX;
     const y = e.clientY;
 
+    // Обработка попапов сюжетного режима
+    if (gameState === "story" && storyPopup) {
+        storyPopup.buttons.forEach(btn => {
+            if (btn.area && x >= btn.area.x && x <= btn.area.x + btn.area.w &&
+                y >= btn.area.y && y <= btn.area.y + btn.area.h) {
+                btn.onClick();
+            }
+        });
+        return;
+    }
+
     // Попап победы
     if (gameState === "play" && showWinPopup) {
-        const px = canvas.width/2 - 150;
-        const py = canvas.height/2 - 90;
-
-        if(x >= px + 40 && x <= px + 130 && y >= py + 100 && y <= py + 140) {
-            showWinPopup = false;
-            playLives = 3;
-            playScore = 0;
-            generateBlocks();
-            resetBallPaddle();
-            return;
-        }
-
-        if(x >= px + 170 && x <= px + 260 && y >= py + 100 && y <= py + 140) {
-            showWinPopup = false;
-            gameState = "menu";
-            return;
-        }
+        const popup = drawPopup("", []); // Создаем временный попап для получения координат
+        popup.buttons.forEach(btn => {
+            if (btn.area && x >= btn.area.x && x <= btn.area.x + btn.area.w &&
+                y >= btn.area.y && y <= btn.area.y + btn.area.h) {
+                btn.onClick();
+            }
+        });
+        return;
     }
 
     // Попап потеря жизни
     if (gameState === "play" && showLoseLifePopup) {
-        const px = canvas.width/2 - 150;
-        const py = canvas.height/2 - 90;
-
-        if(x >= px + 40 && x <= px + 130 && y >= py + 100 && y <= py + 140) {
-            showLoseLifePopup = false;
-            playLives--;
-            resetBallPaddle();
-            return;
-        }
-
-        if(x >= px + 170 && x <= px + 260 && y >= py + 100 && y <= py + 140) {
-            showLoseLifePopup = false;
-            gameState = "menu";
-            return;
-        }
+        const popup = drawPopup("", []);
+        popup.buttons.forEach(btn => {
+            if (btn.area && x >= btn.area.x && x <= btn.area.x + btn.area.w &&
+                y >= btn.area.y && y <= btn.area.y + btn.area.h) {
+                btn.onClick();
+            }
+        });
+        return;
     }
 
     // Попап Game Over
-    if(gameState === "play" && showGameOverPopup) {
-        const px = canvas.width/2 - 150;
-        const py = canvas.height/2 - 90;
-
-        if(x >= px + 40 && x <= px + 130 && y >= py + 100 && y <= py + 140) {
-            showGameOverPopup = false;
-            playLives = 3;
-            playScore = 0;
-            generateBlocks();
-            resetBallPaddle();
-            return;
-        }
-
-        if(x >= px + 170 && x <= px + 260 && y >= py + 100 && y <= py + 140) {
-            showGameOverPopup = false;
-            gameState = "menu";
-            return;
-        }
+    if (gameState === "play" && showGameOverPopup) {
+        const popup = drawPopup("", []);
+        popup.buttons.forEach(btn => {
+            if (btn.area && x >= btn.area.x && x <= btn.area.x + btn.area.w &&
+                y >= btn.area.y && y <= btn.area.y + btn.area.h) {
+                btn.onClick();
+            }
+        });
+        return;
     }
 
     // Меню
-    if(gameState === "menu" && !isTransitioning) {
+    if (gameState === "menu" && !isTransitioning) {
         if (x >= canvas.width/2 - 120 && x <= canvas.width/2 + 120 &&
             y >= canvas.height*0.3 && y <= canvas.height*0.3 + 120) {
             startTransition("arcanoid");
@@ -493,17 +674,25 @@ canvas.addEventListener("click", handleClick);
 
 // Обработчики движения платформы
 function handleMouseMove(e) {
-    if(gameState === "play" && !showGameOverPopup && !showWinPopup && !showLoseLifePopup) {
+    if (gameState === "play" && !showGameOverPopup && !showWinPopup && !showLoseLifePopup) {
         paddle.x = e.clientX - paddle.width/2;
-        // Ограничение движения платформы в пределах canvas
         paddle.x = Math.max(0, Math.min(paddle.x, canvas.width - paddle.width));
+    }
+    if (gameState === "story" && storyStarted && !storyPopup && !storyGirl.hit) {
+        storyPaddle.x = e.clientX - storyPaddle.width/2;
+        storyPaddle.x = Math.max(0, Math.min(storyPaddle.x, canvas.width - storyPaddle.width));
     }
 }
 
 function handleTouchMove(e) {
-    if(gameState === "play" && !showGameOverPopup && !showWinPopup && !showLoseLifePopup) {
+    if (gameState === "play" && !showGameOverPopup && !showWinPopup && !showLoseLifePopup) {
         paddle.x = e.touches[0].clientX - paddle.width/2;
         paddle.x = Math.max(0, Math.min(paddle.x, canvas.width - paddle.width));
+        e.preventDefault();
+    }
+    if (gameState === "story" && storyStarted && !storyPopup && !storyGirl.hit) {
+        storyPaddle.x = e.touches[0].clientX - storyPaddle.width/2;
+        storyPaddle.x = Math.max(0, Math.min(storyPaddle.x, canvas.width - storyPaddle.width));
         e.preventDefault();
     }
 }
@@ -548,19 +737,8 @@ function startArcanoid() {
 
 function startStory() {
     gameState = "story";
-}
-
-// --- СЮЖЕТНЫЙ РЕЖИМ (упрощенная версия) ---
-let storyLevel = 0;
-let storyPopup = null;
-
-function drawStory() {
-    ctx.fillStyle = "#222";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#ffb6c1";
-    ctx.font = "32px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("Скоро (в разработке)", canvas.width/2, canvas.height/2);
+    storyStarted = false;
+    storyPopup = null;
 }
 
 // --- Главный цикл ---
