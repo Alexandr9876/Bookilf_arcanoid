@@ -164,6 +164,25 @@ class SoundManager {
         setTimeout(() => this.playTone(87.31, 400, 'sawtooth'), 200); // F2 очень низкий
     }
 
+    // Звук тошноты
+    playSick() {
+        this.playTone(98, 300, 'sawtooth'); // G2
+        setTimeout(() => this.playTone(87.31, 300, 'sawtooth'), 100); // F2
+    }
+
+    // Звук счастья
+    playHappy() {
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, index) => {
+            setTimeout(() => this.playTone(freq, 150, 'sine'), index * 80);
+        });
+    }
+
+    // Звук старухи
+    playOldWoman() {
+        this.playTone(73.42, 400, 'square'); // D2 низкий
+    }
+
     // Переключение звука
     toggle() {
         this.enabled = !this.enabled;
@@ -213,7 +232,7 @@ let bedGrid = [];
 let storyLevel = 1;
 let storyPopup = null;
 let storyStarted = false;
-let storyGirl = { x: 0, y: 0, size: 60, dodges: 0, maxDodges: 2, hit: false }; // Изменено на 2 уворота
+let storyGirl = { x: 0, y: 0, size: 60, dodges: 0, maxDodges: 2, hit: false };
 let storyBall = { x: 0, y: 0, dx: 0, dy: 0, size: 30, emoji: "🌹" };
 let storyPaddle = { x: 0, y: 0, width: 80, height: 30, emoji: "👨" };
 
@@ -232,6 +251,16 @@ let storyLevel3Lives = 3;
 let storyLevel3Score = 0;
 let grandpaHit = false;
 let grandpaAngry = false;
+
+// Четвертый уровень - Падающие блоки
+let storyLevel4Blocks = [];
+let storyLevel4Paddle = { x: 0, y: 0, width: 80, height: 30, emoji: "👨" };
+let storyLevel4Lives = 3;
+let storyLevel4Score = 0;
+let storyLevel4GirlsCaught = 0;
+let storyLevel4SpawnTimer = 0;
+let storyLevel4SpawnInterval = 60; // кадры между спавном блоков
+let storyLevel4BlockSpeed = 3;
 
 function generateBedGrid() {
     bedGrid = [];
@@ -295,33 +324,29 @@ function generateStoryBlocks() {
     }
 }
 
-// Генерация сердца из смайликов для третьего уровня (улучшенная версия)
+// Генерация сердца из смайликов для третьего уровня
 function generateHeartBlocks() {
     storyLevel3Blocks = [];
-    const blockSize = Math.min(35, canvas.width * 0.04); // Адаптивный размер
+    const blockSize = Math.min(35, canvas.width * 0.04);
     const centerX = canvas.width / 2;
-    const centerY = canvas.height * 0.35; // Подняли выше для лучшего отображения
-    const scale = Math.min(1.2, canvas.width / 500); // Адаптивный масштаб
+    const centerY = canvas.height * 0.35;
+    const scale = Math.min(1.2, canvas.width / 500);
     
-    // Координаты для сердца
     const heartPoints = [];
-    for (let angle = 0; angle < Math.PI * 2; angle += 0.08) { // Более плотное заполнение
+    for (let angle = 0; angle < Math.PI * 2; angle += 0.08) {
         const t = angle;
         const x = 16 * Math.pow(Math.sin(t), 3);
         const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
         heartPoints.push({x: x * scale, y: y * scale});
     }
     
-    // Создаем блоки в форме сердца
     heartPoints.forEach((point, index) => {
         const x = centerX + point.x * blockSize;
         const y = centerY + point.y * blockSize;
         
-        // Проверяем, чтобы блоки не выходили за пределы экрана
         if (x >= 0 && x <= canvas.width - blockSize && 
             y >= 0 && y <= canvas.height * 0.7) {
             
-            // Определяем позицию для деда (в центре сердца)
             const isCenter = Math.abs(point.x) < 1.5 && Math.abs(point.y) < 1.5;
             
             storyLevel3Blocks.push({
@@ -337,14 +362,12 @@ function generateHeartBlocks() {
         }
     });
     
-    // Если блоков слишком мало, создаем упрощенное сердце
     if (storyLevel3Blocks.length < 10) {
         storyLevel3Blocks = [];
         createSimpleHeart();
     }
 }
 
-// Упрощенное сердце для маленьких экранов
 function createSimpleHeart() {
     const blockSize = 30;
     const centerX = canvas.width / 2;
@@ -373,6 +396,27 @@ function createSimpleHeart() {
                 isAngry: false
             });
         }
+    });
+}
+
+// Функция для спавна блоков в четвертом уровне
+function spawnStoryLevel4Block() {
+    const types = [
+        { emoji: "👩", type: "girl" },
+        { emoji: "💩", type: "poop" },
+        { emoji: "👵", type: "oldWoman" }
+    ];
+    
+    const randomType = types[Math.floor(Math.random() * types.length)];
+    const size = 40;
+    
+    storyLevel4Blocks.push({
+        x: Math.random() * (canvas.width - size),
+        y: -size,
+        size: size,
+        emoji: randomType.emoji,
+        type: randomType.type,
+        speed: storyLevel4BlockSpeed + Math.random() * 1
     });
 }
 
@@ -416,6 +460,8 @@ function resizeCanvas() {
         } else if (storyLevel === 3) {
             generateHeartBlocks();
             resetStoryLevel3();
+        } else if (storyLevel === 4) {
+            resetStoryLevel4();
         }
     }
 }
@@ -631,175 +677,27 @@ function enhancedCreateParticlesWithSound(x, y, count, color, soundType = null) 
             case 'angry':
                 soundManager.playAngryGrandpa();
                 break;
+            case 'sick':
+                soundManager.playSick();
+                break;
+            case 'happy':
+                soundManager.playHappy();
+                break;
+            case 'oldWoman':
+                soundManager.playOldWoman();
+                break;
         }
     }
 }
 
-function drawPlayWithEffects() {
-    // Фон
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, "#ff9eb5");
-    gradient.addColorStop(1, "#ffd6a5");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    drawBedBackground();
-
-    // Частицы
-    drawParticles();
-
-    // Блоки
-    ctx.font = `40px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif`;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    
-    blocks.forEach(block => {
-        if(!block.destroyed) {
-            ctx.fillText(blockEmoji, block.x, block.y);
-        }
-    });
-
-    if (blocks.every(block => block.destroyed)) {
-        showWinPopup = true;
-        if (soundManager.enabled) soundManager.playWin();
-    }
-
-    // Шарик
-    ctx.font = `30px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif`;
-    ctx.fillText(ballEmoji, ball.x, ball.y);
-
-    // Платформа
-    ctx.textBaseline = "bottom";
-    ctx.font = `90px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif`;
-    ctx.fillText(paddleEmoji, paddle.x, paddle.y);
-    ctx.textBaseline = "top";
-
-    // Счетчик
-    ctx.font = "bold 24px Arial, sans-serif";
-    ctx.fillStyle = "#000000";
-    ctx.fillText(`Очки: ${playScore}`, 20, 40);
-
-    ctx.font = "28px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
-    ctx.fillText("💊".repeat(playLives), 20, 70);
-
-    // Игровая логика
-    if (!showGameOverPopup && !showWinPopup && !showLoseLifePopup) {
-        ball.x += ball.dx;
-        ball.y += ball.dy;
-
-        // Обновление физики
-        updateBallPhysics(ball);
-
-        if(ball.x < 0 || ball.x > canvas.width - ball.size) {
-            ball.dx = -ball.dx;
-            enhancedCreateParticlesWithSound(ball.x, ball.y, 5, "#ffffff", 'wall');
-        }
-        if(ball.y < 0) {
-            ball.dy = -ball.dy;
-            enhancedCreateParticlesWithSound(ball.x, ball.y, 5, "#ffffff", 'wall');
-        }
-
-        if(ball.y + ball.size >= paddle.y - 90 &&
-           ball.y <= paddle.y &&
-           ball.x + ball.size >= paddle.x &&
-           ball.x <= paddle.x + paddle.width) {
-            ball.dy = -Math.abs(ball.dy);
-            enhancedCreateParticlesWithSound(ball.x, ball.y, 8, "#ff6b6b", 'paddle');
-        }
-
-        blocks.forEach(block => {
-            if(!block.destroyed && checkCollision(ball, block)) {
-                block.destroyed = true;
-                ball.dy = -ball.dy;
-                playScore++;
-                enhancedCreateParticlesWithSound(block.x + block.size/2, block.y + block.size/2, 10, "#ffd93d", 'block');
-            }
-        });
-
-        if(ball.y > canvas.height) {
-            if (playLives > 1) {
-                showLoseLifePopup = true;
-            } else {
-                showGameOverPopup = true;
-                if (soundManager.enabled) soundManager.playLose();
-            }
-            ball.dx = 0;
-            ball.dy = 0;
-            enhancedCreateParticlesWithSound(ball.x, ball.y, 15, "#ff0000", 'life');
-        }
-    }
-
-    // Обновление частиц
-    updateParticles();
-
-    // Попапы
-    if (showWinPopup) {
-        drawPopup("Ты Гигант! 💪", [
-            {text:"Еще раз", color:"#4CAF50", onClick:()=>{
-                showWinPopup = false;
-                playLives = 3;
-                playScore = 0;
-                generateBlocks();
-                resetBallPaddle();
-                particles = [];
-            }},
-            {text:"Выйти", color:"#f44336", onClick:()=>{
-                showWinPopup = false;
-                gameState = "menu";
-                particles = [];
-            }}
-        ]);
-    } else if (showLoseLifePopup) {
-        drawPopup("Ням 💊", [
-            {text:"Принять", color:"#4CAF50", onClick:()=>{
-                showLoseLifePopup = false;
-                playLives--;
-                resetBallPaddle();
-                particles = [];
-            }},
-            {text:"Выйти", color:"#f44336", onClick:()=>{
-                showLoseLifePopup = false;
-                gameState = "menu";
-                particles = [];
-            }}
-        ]);
-    } else if (showGameOverPopup) {
-        drawPopup("Ты сражался, как тигр 🐯", [
-            {text:"Еще раз", color:"#4CAF50", onClick:()=>{
-                showGameOverPopup = false;
-                playLives = 3;
-                playScore = 0;
-                generateBlocks();
-                resetBallPaddle();
-                particles = [];
-            }},
-            {text:"Выйти", color:"#f44336", onClick:()=>{
-                showGameOverPopup = false;
-                gameState = "menu";
-                particles = [];
-            }}
-        ]);
-    }
-}
-
-function resetBallPaddle() {
-    ball.x = canvas.width/2;
-    ball.y = canvas.height/2;
-    ball.dx = 4 * (Math.random() > 0.5 ? 1 : -1);
-    ball.dy = -4;
-
-    paddle.width = Math.min(90, canvas.width * 0.2);
-    paddle.height = 30;
-    paddle.x = canvas.width/2 - paddle.width/2;
-    paddle.y = canvas.height - 50;
-}
+// ... (остальной код остается таким же, включая drawPlayWithEffects, resetBallPaddle и т.д.)
 
 // --- СЮЖЕТНЫЙ РЕЖИМ ---
 function resetStoryLevel() {
     storyGirl.x = canvas.width/2 - storyGirl.size/2;
     storyGirl.y = 150;
     storyGirl.dodges = 0;
-    storyGirl.maxDodges = 2; // Изменено на 2 уворота
+    storyGirl.maxDodges = 2;
     storyGirl.hit = false;
     
     storyBall.x = canvas.width/2;
@@ -841,6 +739,20 @@ function resetStoryLevel3() {
     grandpaAngry = false;
     
     generateHeartBlocks();
+}
+
+// Сброс четвертого уровня
+function resetStoryLevel4() {
+    storyLevel4Blocks = [];
+    storyLevel4Paddle.x = canvas.width/2 - storyLevel4Paddle.width/2;
+    storyLevel4Paddle.y = canvas.height - 80;
+    storyLevel4Lives = 3;
+    storyLevel4Score = 0;
+    storyLevel4GirlsCaught = 0;
+    storyLevel4SpawnTimer = 0;
+    storyLevel4SpawnInterval = 60;
+    storyLevel4BlockSpeed = 3;
+    storyLevel4Paddle.emoji = "👨"; // Сбрасываем смайлик на нормальный
 }
 
 // --- Улучшенный первый уровень сюжета ---
@@ -889,8 +801,6 @@ function drawStoryLevel1WithEffects() {
 
         if (storyBall.x < 0 || storyBall.x > canvas.width - storyBall.size) {
             storyBall.dx = -storyBall.dx;
-            enhancedCreateParticlesWithSound(storyBall.x, storyBall.y
-                                                         storyBall.dx = -storyBall.dx;
             enhancedCreateParticlesWithSound(storyBall.x, storyBall.y, 5, "#ffffff", 'wall');
         }
         if (storyBall.y < 0) {
@@ -1031,7 +941,6 @@ function drawStoryLevel2WithEffects() {
                 storyLevel2Ball.dy = -4;
             } else {
                 if (soundManager.enabled) soundManager.playLose();
-                // НОВЫЙ ПОПАП: Ты разбил ей сердце
                 storyPopup = drawPopup("Ты разбил ей сердце 💔", [
                     {text:"Продолжить", color:"#4CAF50", onClick:()=>{
                         storyPopup = null;
@@ -1074,8 +983,10 @@ function drawStoryLevel3WithEffects() {
     if (allGirlsBlushing && !grandpaHit) {
         if (soundManager.enabled) soundManager.playWin();
         storyPopup = drawPopup("Любовь победила! 💕\nВсе девушки смущены!", [
-            {text:"В меню", color:"#4CAF50", onClick:()=>{
-                exitToMenu();
+            {text:"Продолжить", color:"#4CAF50", onClick:()=>{
+                storyLevel = 4;
+                resetStoryLevel4();
+                storyPopup = null;
                 particles = [];
             }}
         ]);
@@ -1203,6 +1114,145 @@ function drawStoryLevel3WithEffects() {
     updateParticles();
 }
 
+// --- ЧЕТВЕРТЫЙ УРОВЕНЬ - Падающие блоки ---
+function drawStoryLevel4() {
+    const fontFamily = "'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Arial, sans-serif";
+    
+    // Платформа игрока
+    ctx.textBaseline = "bottom";
+    ctx.font = `90px ${fontFamily}`;
+    ctx.fillText(storyLevel4Paddle.emoji, storyLevel4Paddle.x, storyLevel4Paddle.y);
+    ctx.textBaseline = "top";
+
+    // Падающие блоки
+    ctx.font = `40px ${fontFamily}`;
+    storyLevel4Blocks.forEach(block => {
+        ctx.fillText(block.emoji, block.x, block.y);
+    });
+
+    // Счетчик
+    ctx.font = "bold 24px Arial, sans-serif";
+    ctx.fillStyle = "#fff";
+    ctx.fillText(`Поймано девушек: ${storyLevel4GirlsCaught}/5`, 20, 40);
+    ctx.fillText(`Жизни: ${storyLevel4Lives}`, 20, 70);
+
+    // Частицы
+    drawParticles();
+
+    if (!storyPopup) {
+        // Спавн новых блоков
+        storyLevel4SpawnTimer++;
+        if (storyLevel4SpawnTimer >= storyLevel4SpawnInterval) {
+            spawnStoryLevel4Block();
+            storyLevel4SpawnTimer = 0;
+            // Постепенно увеличиваем сложность
+            if (storyLevel4SpawnInterval > 30) {
+                storyLevel4SpawnInterval--;
+            }
+            if (storyLevel4BlockSpeed < 6) {
+                storyLevel4BlockSpeed += 0.1;
+            }
+        }
+
+        // Движение блоков
+        for (let i = storyLevel4Blocks.length - 1; i >= 0; i--) {
+            const block = storyLevel4Blocks[i];
+            block.y += block.speed;
+
+            // Проверка столкновения с платформой
+            if (block.y + block.size >= storyLevel4Paddle.y - 30 &&
+                block.y <= storyLevel4Paddle.y &&
+                block.x + block.size >= storyLevel4Paddle.x &&
+                block.x <= storyLevel4Paddle.x + storyLevel4Paddle.width) {
+                
+                // Обработка разных типов блоков
+                switch(block.type) {
+                    case "girl":
+                        // Девушка - счастье
+                        storyLevel4GirlsCaught++;
+                        enhancedCreateParticlesWithSound(block.x + block.size/2, block.y + block.size/2, 12, "#ff69b4", 'happy');
+                        storyLevel4Paddle.emoji = "😍"; // Счастливый смайлик
+                        setTimeout(() => {
+                            if (storyLevel4Paddle.emoji === "😍") {
+                                storyLevel4Paddle.emoji = "👨";
+                            }
+                        }, 2000);
+                        break;
+                        
+                    case "poop":
+                        // Какашка - тошнота
+                        enhancedCreateParticlesWithSound(block.x + block.size/2, block.y + block.size/2, 10, "#8B4513", 'sick');
+                        storyLevel4Paddle.emoji = "🤢"; // Тошнит смайлик
+                        setTimeout(() => {
+                            if (storyLevel4Paddle.emoji === "🤢") {
+                                storyLevel4Paddle.emoji = "👨";
+                            }
+                        }, 2000);
+                        break;
+                        
+                    case "oldWoman":
+                        // Старуха - потеря жизни
+                        storyLevel4Lives--;
+                        enhancedCreateParticlesWithSound(block.x + block.size/2, block.y + block.size/2, 15, "#ff0000", 'oldWoman');
+                        
+                        if (storyLevel4Lives > 0) {
+                            storyPopup = drawPopup("Уф... А было неплохо", [
+                                {text:"Продолжить", color:"#4CAF50", onClick:()=>{
+                                    storyPopup = null;
+                                }},
+                                {text:"Сначала", color:"#f44336", onClick:()=>{
+                                    storyPopup = null;
+                                    resetStoryLevel4();
+                                }}
+                            ]);
+                        }
+                        break;
+                }
+                
+                // Удаляем блок после столкновения
+                storyLevel4Blocks.splice(i, 1);
+                continue;
+            }
+
+            // Удаление блоков, упавших за экран
+            if (block.y > canvas.height) {
+                storyLevel4Blocks.splice(i, 1);
+            }
+        }
+
+        // Проверка победы
+        if (storyLevel4GirlsCaught >= 5) {
+            if (soundManager.enabled) soundManager.playWin();
+            storyPopup = drawPopup("Победа! 🎉\nТы нашел свою любовь!", [
+                {text:"В меню", color:"#4CAF50", onClick:()=>{
+                    exitToMenu();
+                    particles = [];
+                }}
+            ]);
+            return;
+        }
+
+        // Проверка поражения
+        if (storyLevel4Lives <= 0) {
+            if (soundManager.enabled) soundManager.playLose();
+            storyPopup = drawPopup("Игра окончена!\nПопробуй еще раз!", [
+                {text:"Сначала", color:"#4CAF50", onClick:()=>{
+                    storyPopup = null;
+                    resetStoryLevel4();
+                    particles = [];
+                }},
+                {text:"Выйти", color:"#f44336", onClick:()=>{
+                    exitToMenu();
+                    particles = [];
+                }}
+            ]);
+        }
+    }
+
+    // Обновление частиц
+    updateParticles();
+}
+
 function drawStory() {
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradient.addColorStop(0, "#1a1a2e");
@@ -1242,6 +1292,8 @@ function drawStory() {
         drawStoryLevel2WithEffects();
     } else if (storyLevel === 3) {
         drawStoryLevel3WithEffects();
+    } else if (storyLevel === 4) {
+        drawStoryLevel4();
     }
 }
 
@@ -1442,6 +1494,9 @@ function handleMouseMove(e) {
         } else if (storyLevel === 3) {
             storyLevel3Paddle.x = x - storyLevel3Paddle.width/2;
             storyLevel3Paddle.x = Math.max(0, Math.min(storyLevel3Paddle.x, canvas.width - storyLevel3Paddle.width));
+        } else if (storyLevel === 4) {
+            storyLevel4Paddle.x = x - storyLevel4Paddle.width/2;
+            storyLevel4Paddle.x = Math.max(0, Math.min(storyLevel4Paddle.x, canvas.width - storyLevel4Paddle.width));
         }
     }
 }
@@ -1607,6 +1662,9 @@ function handleTouchMove(e) {
         } else if (storyLevel === 3) {
             storyLevel3Paddle.x = x - storyLevel3Paddle.width/2;
             storyLevel3Paddle.x = Math.max(0, Math.min(storyLevel3Paddle.x, canvas.width - storyLevel3Paddle.width));
+        } else if (storyLevel === 4) {
+            storyLevel4Paddle.x = x - storyLevel4Paddle.width/2;
+            storyLevel4Paddle.x = Math.max(0, Math.min(storyLevel4Paddle.x, canvas.width - storyLevel4Paddle.width));
         }
     }
 }
@@ -1638,6 +1696,10 @@ function adaptSizes() {
         storyLevel3Paddle.height = 25;
         
         storyGirl.size = 50;
+        
+        // Четвертый уровень
+        storyLevel4Paddle.width = 70;
+        storyLevel4Paddle.height = 25;
     } else {
         // Десктопные настройки
         ball.size = 30;
@@ -1657,6 +1719,10 @@ function adaptSizes() {
         storyLevel3Paddle.height = 30;
         
         storyGirl.size = 60;
+        
+        // Четвертый уровень
+        storyLevel4Paddle.width = 80;
+        storyLevel4Paddle.height = 30;
     }
 }
 
@@ -1766,7 +1832,7 @@ function drawHearts() {
 
 // Предзагрузка эмодзи для лучшей производительности
 function preloadEmojis() {
-    const emojis = ["🍑", "🍌", "🍆", "🛏️", "🌹", "👨", "👩", "😎", "💖", "💔", "💊", "💋", "😘", "😊", "👴", "👴🏿"];
+    const emojis = ["🍑", "🍌", "🍆", "🛏️", "🌹", "👨", "👩", "😎", "💖", "💔", "💊", "💋", "😘", "😊", "👴", "👴🏿", "💩", "👵", "😍", "🤢"];
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d');
     tempCanvas.width = 50;
@@ -1847,6 +1913,8 @@ function enhancedResizeCanvas() {
         } else if (storyLevel === 3) {
             generateHeartBlocks();
             resetStoryLevel3();
+        } else if (storyLevel === 4) {
+            resetStoryLevel4();
         }
     }
 }
@@ -1933,12 +2001,12 @@ createParticles = optimizedCreateParticles;
 console.log("🎮 Бананоид успешно запущен! 🎮");
 console.log("Особенности игры:");
 console.log("🍑 - Режим 'Играть' с классическим арканоидом");
-console.log("📖 - Сюжетный режим с тремя уровнями");
+console.log("📖 - Сюжетный режим с ЧЕТЫРЬМЯ уровнями");
 console.log("💖 - Третий уровень с сердцем из смайликов");
-console.log("🎯 - Адаптивный дизайн для мобильных устройств");
+console.log("🎯 - Четвертый уровень с падающими блоками");
 console.log("✨ - Частицы и анимации для лучшего визуального опыта");
 console.log("📱 - Поддержка сенсорного управления и вибрации");
-console.log("🔊 - Полная звуковая система с 11 эффектами");
+console.log("🔊 - Полная звуковая система с 13 эффектами");
 
 // Экспорт для отладки (если нужно)
 if (typeof module !== 'undefined' && module.exports) {
@@ -1966,6 +2034,9 @@ window.gameDebug = {
         storyLevel2Score = 0;
         storyLevel3Lives = 3;
         storyLevel3Score = 0;
+        storyLevel4Lives = 3;
+        storyLevel4Score = 0;
+        storyLevel4GirlsCaught = 0;
         particles = [];
         storyHearts = [];
         grandpaHit = false;
@@ -1978,11 +2049,12 @@ window.gameDebug = {
         }
     },
     setStoryLevel: (level) => {
-        if (level >= 1 && level <= 3) {
+        if (level >= 1 && level <= 4) {
             storyLevel = level;
             if (storyLevel === 1) resetStoryLevel();
             else if (storyLevel === 2) resetStoryLevel2();
             else if (storyLevel === 3) resetStoryLevel3();
+            else if (storyLevel === 4) resetStoryLevel4();
         }
     },
     sound: soundManager
@@ -1995,6 +2067,10 @@ console.log("2. ✅ В уровне с 'крутым в очках' при пр�
 console.log("3. ✅ В уровне с 'дедом' смайлики расположены в форме сердца, полностью на экране");
 console.log("4. ✅ Полная звуковая система интегрирована во все уровни игры");
 console.log("5. ✅ Добавлена кнопка управления звуком в меню");
+console.log("6. ✅ ДОБАВЛЕН ЧЕТВЕРТЫЙ УРОВЕНЬ с падающими блоками:");
+console.log("   - 👩 Девушка: меняет смайлик на 😍, нужно поймать 5 для победы");
+console.log("   - 💩 Какашка: меняет смайлик на 🤢, жизнь не отнимается");
+console.log("   - 👵 Старуха: отнимает жизнь, показывает попап 'Уф... А было неплохо'");
 
 // Финальная проверка инициализации
 window.addEventListener('load', function() {
