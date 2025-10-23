@@ -2,34 +2,50 @@
 const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 
+// Устанавливаем размеры canvas до добавления в DOM
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
 canvas.style.position = "fixed";
-canvas.style.top = 0;
-canvas.style.left = 0;
+canvas.style.top = "0";
+canvas.style.left = "0";
+canvas.style.width = "100%";
+canvas.style.height = "100%";
 canvas.style.display = "block";
-document.body.style.margin = 0;
-document.body.style.padding = 0;
+canvas.style.touchAction = "none"; // Важно для iOS
+
+document.body.style.margin = "0";
+document.body.style.padding = "0";
 document.body.style.overflow = "hidden";
+document.body.style.background = "#000";
 document.body.appendChild(canvas);
 
 // --- Блокировка масштабирования и скролла (совместимо с iPhone) ---
-["gesturestart", "gesturechange", "gestureend"].forEach(evt => {
-  document.addEventListener(evt, e => {
-    if (e.cancelable) e.preventDefault();
-  });
-});
-
-document.addEventListener("touchmove", e => {
-  if (e.scale && e.scale !== 1 && e.cancelable) e.preventDefault();
+document.addEventListener('touchmove', function(e) {
+    e.preventDefault();
 }, { passive: false });
 
-let lastTouchEnd = 0;
-document.addEventListener("touchend", e => {
-  const now = Date.now();
-  if (now - lastTouchEnd <= 300 && e.cancelable) e.preventDefault();
-  lastTouchEnd = now;
+document.addEventListener('gesturestart', function(e) {
+    e.preventDefault();
 });
 
-canvas.addEventListener("touchstart", () => {}, { passive: true });
+document.addEventListener('gesturechange', function(e) {
+    e.preventDefault();
+});
+
+document.addEventListener('gestureend', function(e) {
+    e.preventDefault();
+});
+
+// Предотвращение двойного тапа для масштабирования
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function(e) {
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+    }
+    lastTouchEnd = now;
+}, false);
 
 // --- Переменные ---
 let gameState = "menu";
@@ -67,7 +83,10 @@ let storyBall = { x: 0, y: 0, dx: 0, dy: 0, size: 30, emoji: "🌹" };
 let storyPaddle = { x: 0, y: 0, width: 80, height: 30, emoji: "👨" };
 let storyHearts = [];
 let heartAnimationProgress = 0;
-let heartAnimationDuration = 120; // кадров
+let heartAnimationDuration = 120;
+
+// --- iOS detection ---
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
 function generateBedGrid() {
     bedGrid = [];
@@ -107,7 +126,7 @@ function generateBlocks() {
 }
 
 function drawBedBackground() {
-    ctx.font = "40px 'Segoe UI Emoji', Arial";
+    ctx.font = "40px 'Segoe UI Emoji', Arial, sans-serif";
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
     ctx.globalAlpha = 0.12;
@@ -119,15 +138,22 @@ function drawBedBackground() {
 
 // --- Resize ---
 function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    
+    // Устанавливаем точные размеры canvas
+    canvas.width = width;
+    canvas.height = height;
+    
+    // Обновляем CSS размеры
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
 
-    maleY = canvas.height - 50;
-    femaleY = canvas.height - 50;
+    maleY = height - 50;
+    femaleY = height - 50;
 
     generateBedGrid();
     
-    // Переинициализация игровых элементов при изменении размера
     if (gameState === "play") {
         resetBallPaddle();
         generateBlocks();
@@ -137,7 +163,12 @@ function resizeCanvas() {
     }
 }
 
-window.addEventListener("resize", resizeCanvas);
+// Улучшенный обработчик resize для iOS
+let resizeTimeout;
+window.addEventListener("resize", function() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(resizeCanvas, 100);
+});
 resizeCanvas();
 
 // --- Бюстгальтер ---
@@ -170,7 +201,7 @@ function drawButtonBra(x, y, w, h, color, text, textSize) {
     ctx.stroke();
 
     ctx.fillStyle = "#fff";
-    ctx.font = `${textSize}px Arial`;
+    ctx.font = `bold ${textSize}px Arial, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(text, x + w/2, y + h*0.65);
@@ -195,7 +226,7 @@ function drawButtonStringPanties(x, y, w, h, color, text, textSize) {
     ctx.stroke();
 
     ctx.fillStyle = "#fff";
-    ctx.font = `${textSize}px Arial`;
+    ctx.font = `bold ${textSize}px Arial, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(text, x + w/2, y + h/2);
@@ -203,42 +234,50 @@ function drawButtonStringPanties(x, y, w, h, color, text, textSize) {
 
 // --- Универсальный попап ---
 function drawPopup(text, buttons) {
-    const w = 400, h = 220;
-    const x = canvas.width/2 - w/2;
-    const y = canvas.height/2 - h/2;
+    const w = Math.min(400, canvas.width - 40);
+    const h = 220;
+    const x = (canvas.width - w) / 2;
+    const y = (canvas.height - h) / 2;
 
-    ctx.fillStyle = "rgba(0,0,0,0.8)";
+    ctx.fillStyle = "rgba(0,0,0,0.9)";
     ctx.fillRect(x, y, w, h);
+    
+    // Добавляем рамку
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, w, h);
 
     ctx.fillStyle = "#fff";
-    ctx.font = "22px Arial";
+    ctx.font = "bold 22px Arial, sans-serif";
     ctx.textAlign = "center";
     
-    // Перенос строк если текст длинный
     const lines = text.split('\n');
     lines.forEach((line, i) => {
         ctx.fillText(line, canvas.width/2, y + 60 + i * 30);
     });
 
+    const btnWidth = 120;
+    const btnSpacing = 20;
+    const totalWidth = buttons.length * btnWidth + (buttons.length - 1) * btnSpacing;
+    const startX = canvas.width/2 - totalWidth/2;
+    
     buttons.forEach((btn, i) => {
-        const btnWidth = 120;
-        const btnSpacing = 40;
-        const totalWidth = buttons.length * btnWidth + (buttons.length - 1) * btnSpacing;
-        const startX = canvas.width/2 - totalWidth/2;
-        
         const bx = startX + i * (btnWidth + btnSpacing);
         const by = y + 130;
         
+        // Стиль кнопки
         ctx.fillStyle = btn.color;
         ctx.fillRect(bx, by, btnWidth, 50);
+        
+        // Текст кнопки
         ctx.fillStyle = "#fff";
-        ctx.font = "18px Arial";
+        ctx.font = "bold 18px Arial, sans-serif";
         ctx.fillText(btn.text, bx + btnWidth/2, by + 30);
         
         btn.area = {x: bx, y: by, w: btnWidth, h: 50};
     });
 
-    return { buttons };
+    return { buttons, text };
 }
 
 // --- Меню ---
@@ -251,27 +290,24 @@ function drawMenu() {
 
     drawBedBackground();
 
-    const title = "🍑 Уфноид 🍌";
-    let fontSize = 56; 
-    ctx.font = `${fontSize}px 'Segoe UI Emoji', Arial`;
-    let textWidth = ctx.measureText(title).width;
-
-    while (textWidth > canvas.width - 40 && fontSize > 10) {
-        fontSize -= 2;
-        ctx.font = `${fontSize}px 'Segoe UI Emoji', Arial`;
-        textWidth = ctx.measureText(title).width;
-    }
-
+    const title = "🍑 Бананоид 🍌";
+    let fontSize = Math.min(56, canvas.width / 10);
+    ctx.font = `bold ${fontSize}px 'Segoe UI Emoji', Arial, sans-serif`;
+    
     ctx.textAlign = "center";
     ctx.fillStyle = "#fff";
     ctx.fillText(title, canvas.width/2, canvas.height*0.15);
 
-    const buttonTextSize = Math.floor(canvas.height * 0.06);
+    const buttonTextSize = Math.max(20, Math.floor(canvas.height * 0.04));
 
-    drawButtonBra(canvas.width/2 - 120, canvas.height*0.3, 240, 120, "#4CAF50", "Играть", buttonTextSize);
-    drawButtonStringPanties(canvas.width/2 - 100, canvas.height*0.5, 200, 80, "#f44336", "Сюжет", buttonTextSize);
+    // Увеличиваем зону клика для мобильных
+    const buttonWidth = Math.min(240, canvas.width * 0.6);
+    const buttonHeight = Math.min(120, canvas.height * 0.15);
+    
+    drawButtonBra(canvas.width/2 - buttonWidth/2, canvas.height*0.3, buttonWidth, buttonHeight, "#4CAF50", "Играть", buttonTextSize);
+    drawButtonStringPanties(canvas.width/2 - buttonWidth/2, canvas.height*0.5, buttonWidth, buttonHeight * 0.7, "#f44336", "Сюжет", buttonTextSize);
 
-    ctx.font = "48px 'Segoe UI Emoji', Arial";
+    ctx.font = "48px 'Segoe UI Emoji', Arial, sans-serif";
     ctx.fillText("👨", maleX, maleY);
     ctx.fillText("👩", femaleX, femaleY);
 
@@ -287,13 +323,12 @@ function drawArcanoid() {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#fff";
-    ctx.font = "32px Arial";
+    ctx.font = "32px Arial, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("Скоро (в разработке)", canvas.width/2, canvas.height/2);
 }
 
 function drawPlay() {
-    // фон
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradient.addColorStop(0, "#ff9eb5");
     gradient.addColorStop(1, "#ffd6a5");
@@ -303,44 +338,40 @@ function drawPlay() {
     drawBedBackground();
 
     // блоки
-    ctx.font = `${blocks[0]?.size || 40}px 'Segoe UI Emoji', Arial`;
+    ctx.font = `${blocks[0]?.size || 40}px 'Segoe UI Emoji', Arial, sans-serif`;
     blocks.forEach(block => {
         if(!block.destroyed) ctx.fillText(blockEmoji, block.x, block.y);
     });
 
-    // проверка победы
     if (blocks.every(block => block.destroyed)) {
         showWinPopup = true;
     }
 
     // шарик
-    ctx.font = `${ball.size}px 'Segoe UI Emoji', Arial`;
+    ctx.font = `${ball.size}px 'Segoe UI Emoji', Arial, sans-serif`;
     ctx.fillText(ballEmoji, ball.x, ball.y);
 
     // платформа
     ctx.textBaseline = "bottom";
-    ctx.font = `${paddle.height*3}px 'Segoe UI Emoji', Arial`;
+    ctx.font = `${paddle.height*3}px 'Segoe UI Emoji', Arial, sans-serif`;
     ctx.fillText(paddleEmoji, paddle.x, paddle.y);
     ctx.textBaseline = "top";
 
     // счетчик и жизни
-    ctx.font = "24px Arial";
+    ctx.font = "bold 24px Arial, sans-serif";
     ctx.fillStyle = "#000000";
-    ctx.fillText(`Обананено персичков: ${playScore}`, 20, 40);
+    ctx.fillText(`Очки: ${playScore}`, 20, 40);
 
-    ctx.font = "28px 'Segoe UI Emoji', Arial";
+    ctx.font = "28px 'Segoe UI Emoji', Arial, sans-serif";
     ctx.fillText("💊".repeat(playLives), 20, 70);
 
-    // движение шарика (только если нет активного попапа)
     if (!showGameOverPopup && !showWinPopup && !showLoseLifePopup) {
         ball.x += ball.dx;
         ball.y += ball.dy;
 
-        // проверка столкновений со стенками
         if(ball.x < 0 || ball.x > canvas.width - ball.size) ball.dx = -ball.dx;
         if(ball.y < 0) ball.dy = -ball.dy;
 
-        // Проверка столкновения с платформой
         if(ball.y + ball.size >= paddle.y - paddle.height*3 &&
            ball.y <= paddle.y &&
            ball.x + ball.size >= paddle.x &&
@@ -348,7 +379,6 @@ function drawPlay() {
             ball.dy = -ball.dy;
         }
 
-        // проверка попадания по блокам
         blocks.forEach(block => {
             if(!block.destroyed &&
                ball.x + ball.size > block.x &&
@@ -361,20 +391,17 @@ function drawPlay() {
             }
         });
 
-        // проверка падения шарика
         if(ball.y > canvas.height) {
             if (playLives > 1) {
                 showLoseLifePopup = true;
             } else {
                 showGameOverPopup = true;
             }
-            // Останавливаем мяч при показе попапа
             ball.dx = 0;
             ball.dy = 0;
         }
     }
 
-    // Попапы
     if (showWinPopup) drawWinPopup();
     else if (showLoseLifePopup) drawLoseLifePopup();
     else if (showGameOverPopup) drawGameOverPopup();
@@ -386,7 +413,7 @@ function resetBallPaddle() {
     ball.dx = 4 * (Math.random() > 0.5 ? 1 : -1);
     ball.dy = -4;
 
-    paddle.width = 90;
+    paddle.width = Math.min(90, canvas.width * 0.2);
     paddle.height = 30;
     paddle.x = canvas.width/2 - paddle.width/2;
     paddle.y = canvas.height - 50;
@@ -458,14 +485,12 @@ function resetStoryLevel() {
 }
 
 function drawStory() {
-    // Фон сна - темный с звездами
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradient.addColorStop(0, "#1a1a2e");
     gradient.addColorStop(1, "#16213e");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Рисуем звезды на фоне
     ctx.fillStyle = "white";
     ctx.globalAlpha = 0.3;
     for(let i = 0; i < 50; i++) {
@@ -476,7 +501,6 @@ function drawStory() {
     ctx.globalAlpha = 1.0;
 
     if (!storyStarted) {
-        // Показываем попап начала сна
         storyPopup = drawPopup("Тебе снится сон...", [
             {text:"Начать", color:"#4CAF50", onClick:()=>{
                 storyStarted = true;
@@ -492,26 +516,23 @@ function drawStory() {
         return;
     }
 
-    // Девушка (уворачивающаяся)
-    ctx.font = `${storyGirl.size}px 'Segoe UI Emoji', Arial`;
+    // Девушка
+    ctx.font = `${storyGirl.size}px 'Segoe UI Emoji', Arial, sans-serif`;
     ctx.fillText("👩", storyGirl.x, storyGirl.y);
 
-    // Роза (шарик)
-    ctx.font = `${storyBall.size}px 'Segoe UI Emoji', Arial`;
+    // Роза
+    ctx.font = `${storyBall.size}px 'Segoe UI Emoji', Arial, sans-serif`;
     ctx.fillText(storyBall.emoji, storyBall.x, storyBall.y);
 
-    // Парень (платформа)
+    // Парень
     ctx.textBaseline = "bottom";
-    ctx.font = `${storyPaddle.height*2}px 'Segoe UI Emoji', Arial`;
+    ctx.font = `${storyPaddle.height*2}px 'Segoe UI Emoji', Arial, sans-serif`;
     ctx.fillText(storyPaddle.emoji, storyPaddle.x, storyPaddle.y);
     ctx.textBaseline = "top";
 
-    // Анимация сердечек после попадания
     if (storyGirl.hit && heartAnimationProgress < heartAnimationDuration) {
         heartAnimationProgress++;
-        const progress = heartAnimationProgress / heartAnimationDuration;
         
-        // Создаем новые сердечки
         if (heartAnimationProgress % 5 === 0 && storyHearts.length < 30) {
             storyHearts.push({
                 x: Math.random() * canvas.width,
@@ -521,16 +542,14 @@ function drawStory() {
             });
         }
         
-        // Анимируем сердечки
         storyHearts.forEach(heart => {
             heart.opacity = Math.min(heart.opacity + 0.02, 1);
             ctx.globalAlpha = heart.opacity;
-            ctx.font = `${heart.size}px 'Segoe UI Emoji', Arial`;
+            ctx.font = `${heart.size}px 'Segoe UI Emoji', Arial, sans-serif`;
             ctx.fillText("❤️", heart.x, heart.y);
         });
         ctx.globalAlpha = 1.0;
         
-        // Когда анимация завершена, показываем попап
         if (heartAnimationProgress >= heartAnimationDuration && !storyPopup) {
             storyPopup = drawPopup("Пора сон сделать явью", [
                 {text:"Проснуться", color:"#4CAF50", onClick:()=>{
@@ -547,12 +566,10 @@ function drawStory() {
         return;
     }
 
-    // Движение розы
     if (!storyGirl.hit) {
         storyBall.x += storyBall.dx;
         storyBall.y += storyBall.dy;
 
-        // Столкновение со стенами
         if (storyBall.x < 0 || storyBall.x > canvas.width - storyBall.size) {
             storyBall.dx = -storyBall.dx;
         }
@@ -560,35 +577,29 @@ function drawStory() {
             storyBall.dy = -storyBall.dy;
         }
 
-        // Столкновение с платформой
         if (storyBall.y + storyBall.size >= storyPaddle.y - 40 &&
             storyBall.x > storyPaddle.x && storyBall.x < storyPaddle.x + storyPaddle.width) {
             storyBall.dy = -storyBall.dy;
         }
 
-        // Столкновение с девушкой
         if (!storyGirl.hit &&
             storyBall.x + storyBall.size > storyGirl.x &&
             storyBall.x < storyGirl.x + storyGirl.size &&
             storyBall.y + storyBall.size > storyGirl.y &&
             storyBall.y < storyGirl.y + storyGirl.size) {
             
-            // Девушка уворачивается 5 раз
             if (storyGirl.dodges < storyGirl.maxDodges) {
                 storyGirl.dodges++;
-                // Перемещаем девушку в случайное место
                 storyGirl.x = Math.random() * (canvas.width - storyGirl.size);
                 storyGirl.y = 100 + Math.random() * 200;
                 storyBall.dy = -storyBall.dy;
             } else {
-                // Попадание после 5 уворотов
                 storyGirl.hit = true;
                 storyBall.dx = 0;
                 storyBall.dy = 0;
             }
         }
 
-        // Падение розы - проигрыш
         if (storyBall.y > canvas.height && !storyPopup) {
             storyPopup = drawPopup("Подкат не удался", [
                 {text:"Повторить", color:"#4CAF50", onClick:()=>{
@@ -605,10 +616,29 @@ function drawStory() {
     }
 }
 
-// --- Обработчик кликов ---
+// --- Улучшенный обработчик кликов для iOS ---
 function handleClick(e) {
-    const x = e.clientX;
-    const y = e.clientY;
+    let x, y;
+    
+    if (e.type === 'touchstart' || e.type === 'touchmove' || e.type === 'touchend') {
+        const touch = e.touches[0] || e.changedTouches[0];
+        x = touch.clientX;
+        y = touch.clientY;
+    } else {
+        x = e.clientX;
+        y = e.clientY;
+    }
+
+    // Корректировка координат для canvas
+    const rect = canvas.getBoundingClientRect();
+    x = x - rect.left;
+    y = y - rect.top;
+
+    // Масштабирование координат если нужно
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    x *= scaleX;
+    y *= scaleY;
 
     // Обработка попапов сюжетного режима
     if (gameState === "story" && storyPopup) {
@@ -616,89 +646,78 @@ function handleClick(e) {
             if (btn.area && x >= btn.area.x && x <= btn.area.x + btn.area.w &&
                 y >= btn.area.y && y <= btn.area.y + btn.area.h) {
                 btn.onClick();
+                e.preventDefault();
+                return;
             }
         });
-        return;
     }
 
-    // Попап победы
-    if (gameState === "play" && showWinPopup) {
-        const popup = drawPopup("", []); // Создаем временный попап для получения координат
-        popup.buttons.forEach(btn => {
-            if (btn.area && x >= btn.area.x && x <= btn.area.x + btn.area.w &&
-                y >= btn.area.y && y <= btn.area.y + btn.area.h) {
-                btn.onClick();
-            }
-        });
-        return;
-    }
-
-    // Попап потеря жизни
-    if (gameState === "play" && showLoseLifePopup) {
-        const popup = drawPopup("", []);
-        popup.buttons.forEach(btn => {
-            if (btn.area && x >= btn.area.x && x <= btn.area.x + btn.area.w &&
-                y >= btn.area.y && y <= btn.area.y + btn.area.h) {
-                btn.onClick();
-            }
-        });
-        return;
-    }
-
-    // Попап Game Over
-    if (gameState === "play" && showGameOverPopup) {
-        const popup = drawPopup("", []);
-        popup.buttons.forEach(btn => {
-            if (btn.area && x >= btn.area.x && x <= btn.area.x + btn.area.w &&
-                y >= btn.area.y && y <= btn.area.y + btn.area.h) {
-                btn.onClick();
-            }
-        });
-        return;
+    // Обработка попапов игрового режима
+    if (gameState === "play") {
+        if (showWinPopup || showLoseLifePopup || showGameOverPopup) {
+            const popup = drawPopup("", []);
+            popup.buttons.forEach(btn => {
+                if (btn.area && x >= btn.area.x && x <= btn.area.x + btn.area.w &&
+                    y >= btn.area.y && y <= btn.area.y + btn.area.h) {
+                    btn.onClick();
+                    e.preventDefault();
+                    return;
+                }
+            });
+        }
     }
 
     // Меню
     if (gameState === "menu" && !isTransitioning) {
-        if (x >= canvas.width/2 - 120 && x <= canvas.width/2 + 120 &&
-            y >= canvas.height*0.3 && y <= canvas.height*0.3 + 120) {
+        const buttonWidth = Math.min(240, canvas.width * 0.6);
+        const buttonHeight = Math.min(120, canvas.height * 0.15);
+        
+        // Кнопка "Играть"
+        if (x >= canvas.width/2 - buttonWidth/2 && x <= canvas.width/2 + buttonWidth/2 &&
+            y >= canvas.height*0.3 && y <= canvas.height*0.3 + buttonHeight) {
             startTransition("arcanoid");
+            e.preventDefault();
+            return;
         }
-        if (x >= canvas.width/2 - 100 && x <= canvas.width/2 + 100 &&
-            y >= canvas.height*0.5 && y <= canvas.height*0.5 + 80) {
+        
+        // Кнопка "Сюжет"
+        if (x >= canvas.width/2 - buttonWidth/2 && x <= canvas.width/2 + buttonWidth/2 &&
+            y >= canvas.height*0.5 && y <= canvas.height*0.5 + buttonHeight * 0.7) {
             startTransition("story");
+            e.preventDefault();
+            return;
         }
     }
 }
 
-canvas.addEventListener("click", handleClick);
-
-// Обработчики движения платформы
+// Улучшенные обработчики движения
 function handleMouseMove(e) {
+    let x;
+    if (e.type === 'touchmove') {
+        x = e.touches[0].clientX;
+    } else {
+        x = e.clientX;
+    }
+    
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    x = (x - rect.left) * scaleX;
+
     if (gameState === "play" && !showGameOverPopup && !showWinPopup && !showLoseLifePopup) {
-        paddle.x = e.clientX - paddle.width/2;
+        paddle.x = x - paddle.width/2;
         paddle.x = Math.max(0, Math.min(paddle.x, canvas.width - paddle.width));
     }
     if (gameState === "story" && storyStarted && !storyPopup && !storyGirl.hit) {
-        storyPaddle.x = e.clientX - storyPaddle.width/2;
+        storyPaddle.x = x - storyPaddle.width/2;
         storyPaddle.x = Math.max(0, Math.min(storyPaddle.x, canvas.width - storyPaddle.width));
     }
 }
 
-function handleTouchMove(e) {
-    if (gameState === "play" && !showGameOverPopup && !showWinPopup && !showLoseLifePopup) {
-        paddle.x = e.touches[0].clientX - paddle.width/2;
-        paddle.x = Math.max(0, Math.min(paddle.x, canvas.width - paddle.width));
-        e.preventDefault();
-    }
-    if (gameState === "story" && storyStarted && !storyPopup && !storyGirl.hit) {
-        storyPaddle.x = e.touches[0].clientX - storyPaddle.width/2;
-        storyPaddle.x = Math.max(0, Math.min(storyPaddle.x, canvas.width - storyPaddle.width));
-        e.preventDefault();
-    }
-}
-
+// Добавляем все типы событий
+canvas.addEventListener("click", handleClick);
+canvas.addEventListener("touchstart", handleClick);
 canvas.addEventListener("mousemove", handleMouseMove);
-canvas.addEventListener("touchmove", handleTouchMove, {passive: false});
+canvas.addEventListener("touchmove", handleMouseMove);
 
 // --- Переход ---
 function startTransition(targetState) {
@@ -758,5 +777,15 @@ function draw() {
     requestAnimationFrame(draw);
 }
 
-// --- Запуск ---
-draw();
+// Запускаем игру после загрузки
+window.addEventListener('load', function() {
+    resizeCanvas();
+    draw();
+});
+
+// Дополнительная инициализация для iOS
+if (isIOS) {
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(resizeCanvas, 100);
+    });
+}
